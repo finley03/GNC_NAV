@@ -17,7 +17,7 @@ int main(void) {
 	nav_selftest_packet.bit.imu_code = imu_check();
 	nav_selftest_packet.bit.baro_code = baro_check();
 	
-	REG_PORT_OUTSET0 = LED;
+	//REG_PORT_OUTSET0 = LED;
 	
 	
 	gps_init_dma();
@@ -29,7 +29,6 @@ int main(void) {
 			float latitude = ubx_nav_pvt.bit.lat * 1E-7;
 			float longitude = ubx_nav_pvt.bit.lon * 1E-7;
 			float height = ubx_nav_pvt.bit.height * 1E-3;
-			//float speed = ubx_nav_pvt.bit.gSpeed * 1E-3;
 			float hAcc = ubx_nav_pvt.bit.hAcc * 1E-3;
 			float vAcc = ubx_nav_pvt.bit.vAcc * 1E-3;
 			
@@ -41,6 +40,20 @@ int main(void) {
 			nav_data_packet.bit.v_acc = vAcc;
 			nav_data_packet.bit.gps_satellites = ubx_nav_pvt.bit.numSV;
 		}
+		
+		
+		IMU_Data imu_data = imu_get_data();
+		nav_data_packet.bit.accel_x = imu_data.accel_x;
+		nav_data_packet.bit.accel_y = imu_data.accel_y;
+		nav_data_packet.bit.accel_z = imu_data.accel_z;
+		
+		nav_data_packet.bit.angularvelocity_x = imu_data.gyro_x;
+		nav_data_packet.bit.angularvelocity_y = imu_data.gyro_y;
+		nav_data_packet.bit.angularvelocity_z = imu_data.gyro_z;
+		
+		nav_data_packet.bit.temperature = imu_data.temp;
+		
+		nav_data_packet.bit.pressure = baro_get_data();
 		
 		
 		txc_data();
@@ -81,17 +94,18 @@ void init() {
 	
 	// set LED to output
 	REG_PORT_DIRSET0 = LED;
+	REG_PORT_OUTSET0 = LED;
 	
 	
 
 	delay_ms(100);
 	
 	
-	if (system_check() != 0) {
-		REG_PORT_OUTSET0 = LED;
-		delay_ms(1000);
-		REG_PORT_OUTCLR0 = LED;
-	}
+	//if (system_check() != 0) {
+		//REG_PORT_OUTSET0 = LED;
+		//delay_ms(1000);
+		//REG_PORT_OUTCLR0 = LED;
+	//}
 	
 }
 

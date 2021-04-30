@@ -1,5 +1,7 @@
 #include "samd21e18a.h"
 
+#include <math.h>
+
 #include "time.h"
 #include "util.h"
 #include "spi.h"
@@ -50,6 +52,7 @@ typedef struct __attribute__((aligned(4))) { // aligned is for CRC calculation
 			
 	// raw data output
 			
+	float pressure; // pa
 	float temperature;
 			
 			

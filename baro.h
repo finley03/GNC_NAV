@@ -11,4 +11,6 @@ void baro_init();
 
 uint8_t baro_check();
 
+float baro_get_data();
+
 #endif
