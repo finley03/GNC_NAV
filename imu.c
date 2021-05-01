@@ -30,7 +30,6 @@ uint8_t imu_read(uint8_t address) {
 uint16_t imu_read_16(uint8_t address) {
 	// set SS low
 	REG_PORT_OUTCLR0 = SPI_IMU_SS;
-	//delay_us(2);
 	// send address
 	spi_command(address | IMU_READ_MASK);
 	
@@ -47,6 +46,42 @@ uint16_t imu_read_16(uint8_t address) {
 	uint16_t out = ((uint16_t) out0 << 8) | (uint16_t) out1;
 	
 	return out;
+}
+
+
+// function swaps units of two bytes
+// writes back to array of bytes
+// size must be multiple of 2
+void imu_read_16_n(uint8_t address, uint8_t writeback[], uint8_t size) { // size is in bytes
+	// set SS low
+	REG_PORT_OUTCLR0 = SPI_IMU_SS;
+	// send address
+	spi_command(address | IMU_READ_MASK);
+
+	// read data in units of 2 bytes, swapping them
+	for (uint16_t i = 0; i < size; i += 2) {
+		writeback[i + 1] = spi_command(0);
+		writeback[i] = spi_command(0);
+	}
+	
+	// set SS high
+	REG_PORT_OUTSET0 = SPI_IMU_SS;
+}
+
+
+void imu_read_n(uint8_t address, uint8_t writeback[], uint8_t size) {
+	// set SS low
+	REG_PORT_OUTCLR0 = SPI_IMU_SS;
+	// send address
+	spi_command(address | IMU_READ_MASK);
+
+	// read data
+	for (uint16_t i = 0; i < size; ++i) {
+		writeback[i] = spi_command(0);
+	}
+	
+	// set SS high
+	REG_PORT_OUTSET0 = SPI_IMU_SS;
 }
 
 
@@ -70,13 +105,39 @@ uint8_t imu_mag_read(uint8_t address) {
 	imu_write(I2C_SLV0_CTRL, 0x80 | 0x01);
 	
 	// wait for transfer to complete
-	delay_ms(1);
+	delay_us(800);
 	
 	imu_user_bank(0);
 	
 	uint8_t out = imu_read(EXT_SLV_SENS_DATA_00);
 	
 	return out;
+}
+
+
+// max 7 bytes
+void imu_mag_read_n(uint8_t address, uint8_t writeback[], uint8_t size) {
+	// make sure value is within range
+	size = (size < 8) ? size : 7;
+	
+	imu_user_bank(3);
+	
+	// set i2c slave address to 0x0c (magnetometer)
+	imu_write(I2C_SLV0_ADDR, 0x0c | 0x80);
+		
+	// set address of register to read in magnetometer
+	imu_write(I2C_SLV0_REG, address);
+	
+	// enable i2c and request byte
+	imu_write(I2C_SLV0_CTRL, 0x80 | size);
+	
+	// wait for transfer to complete
+	delay_us(2000);
+	
+	imu_user_bank(0);
+	
+	// collect data from IMU
+	imu_read_n(EXT_SLV_SENS_DATA_00, writeback, size);
 }
 
 
@@ -144,28 +205,11 @@ void imu_init() {
 	imu_write(PWR_MGMT_1, 0b00000001);
 	
 	// wait to exit sleep mode
-	delay_ms(1);
+	//delay_ms(1);
+	delay_us(80);
 	
 	
 	imu_init_magnetometer();
-	
-	//// power down magnetometer
-	//imu_mag_write(MAG_CNTL2, 0x00);
-	//
-	//// reset IMU
-	//imu_write(PWR_MGMT_1, 0x80);
-	//
-	//// wait for imu to come back up
-	//delay_ms(1);
-	//
-	//// reset magnetometer
-	//imu_mag_write(MAG_CNTL3, 0x01);
-	//
-	//// set clock source
-	//imu_write(PWR_MGMT_1, 0b00000001);
-	//
-	//// init mag again
-	//imu_init_magnetometer();
 }
 
 
@@ -184,15 +228,10 @@ uint8_t imu_check() {
 IMU_Data imu_get_data() {
 	IMU_Raw_Data imu_raw_data;
 	
-	imu_raw_data.accel_x = imu_read_16(ACCEL_XOUT_H);
-	imu_raw_data.accel_y = imu_read_16(ACCEL_YOUT_H);
-	imu_raw_data.accel_z = imu_read_16(ACCEL_ZOUT_H);
+	imu_read_16_n(ACCEL_XOUT_H, imu_raw_data.reg, sizeof(imu_raw_data.reg));
 	
-	imu_raw_data.gyro_x = imu_read_16(GYRO_XOUT_H);
-	imu_raw_data.gyro_y = imu_read_16(GYRO_YOUT_H);
-	imu_raw_data.gyro_z = imu_read_16(GYRO_ZOUT_H);
-	
-	imu_raw_data.temp = imu_read_16(TEMP_OUT_H);
+	MAG_Raw_Data mag_raw_data;
+	imu_mag_read_n(MAG_HXL, mag_raw_data.reg, sizeof(mag_raw_data.reg));
 	
 	
 	IMU_Data imu_data;
@@ -209,20 +248,20 @@ IMU_Data imu_get_data() {
 	#define GYRO_MULTIPLIER (GYRO_RANGE/GYRO_MAX)
 	
 	
-	imu_data.accel_x = (float) imu_raw_data.accel_x * ACCEL_MULTIPLIER;
-	imu_data.accel_y = (float) imu_raw_data.accel_y * ACCEL_MULTIPLIER;
-	imu_data.accel_z = (float) imu_raw_data.accel_z * ACCEL_MULTIPLIER;
+	imu_data.accel_x = (float) imu_raw_data.bit.accel_x * ACCEL_MULTIPLIER;
+	imu_data.accel_y = (float) imu_raw_data.bit.accel_y * ACCEL_MULTIPLIER;
+	imu_data.accel_z = (float) imu_raw_data.bit.accel_z * ACCEL_MULTIPLIER;
 	
-	imu_data.gyro_x = (float) imu_raw_data.gyro_x * GYRO_MULTIPLIER;
-	imu_data.gyro_y = (float) imu_raw_data.gyro_y * GYRO_MULTIPLIER;
-	imu_data.gyro_z = (float) imu_raw_data.gyro_z * GYRO_MULTIPLIER;
+	imu_data.gyro_x = (float) imu_raw_data.bit.gyro_x * GYRO_MULTIPLIER;
+	imu_data.gyro_y = (float) imu_raw_data.bit.gyro_y * GYRO_MULTIPLIER;
+	imu_data.gyro_z = (float) imu_raw_data.bit.gyro_z * GYRO_MULTIPLIER;
 	
 	#define TEMP_MAX 32768
 	#define TEMP_RANGE 62.5 // unsigned range
 	#define TEMP_OFFSET 22.5
 	#define TEMP_MULTIPLIER (TEMP_RANGE/TEMP_MAX)
 	
-	imu_data.temp = (float) imu_raw_data.temp * TEMP_MULTIPLIER + TEMP_OFFSET;
+	imu_data.temp = (float) imu_raw_data.bit.temp * TEMP_MULTIPLIER + TEMP_OFFSET;
 	
 	
 	return imu_data;

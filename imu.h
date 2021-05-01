@@ -113,6 +113,13 @@ typedef struct {
 	int16_t gyro_z;
 	
 	int16_t temp;
+} IMU_Raw_Data_Type;
+
+
+typedef union {
+	IMU_Raw_Data_Type bit;
+	
+	uint8_t reg[sizeof(IMU_Raw_Data_Type)];
 } IMU_Raw_Data;
 
 
@@ -127,6 +134,25 @@ typedef struct {
 	
 	float temp;
 } IMU_Data;
+
+
+typedef struct {
+	int16_t mag_x;
+	int16_t mag_y;
+	int16_t mag_z;
+} MAG_Raw_Data_Type;
+
+
+typedef union {
+	MAG_Raw_Data_Type bit;
+	
+	uint8_t reg[sizeof(MAG_Raw_Data_Type)]
+} MAG_Raw_Data;
+
+
+typedef struct {
+	
+} MAG_Data;
 
 
 // IMU must be initialised to prevent
