@@ -146,12 +146,14 @@ typedef struct {
 typedef union {
 	MAG_Raw_Data_Type bit;
 	
-	uint8_t reg[sizeof(MAG_Raw_Data_Type)]
+	uint8_t reg[sizeof(MAG_Raw_Data_Type)];
 } MAG_Raw_Data;
 
 
 typedef struct {
-	
+	float mag_x;
+	float mag_y;
+	float mag_z;
 } MAG_Data;
 
 
@@ -172,6 +174,11 @@ void imu_user_bank(uint8_t bank);
 
 // get formatted IMU data
 IMU_Data imu_get_data();
+
+
+// this function is extremely slow, and does not utilise DMA
+// should only be used periocially to avoid hanging the system
+MAG_Data mag_get_data();
 
 
 

@@ -23,7 +23,7 @@ int main(void) {
 	gps_init_dma();
 	
 	while(1) {
-		delay_ms(2);
+		delay_ms(20);
 		
 		if (gps_dma_check_complete()) {
 			float latitude = ubx_nav_pvt.bit.lat * 1E-7;
@@ -47,13 +47,19 @@ int main(void) {
 		nav_data_packet.bit.accel_y = imu_data.accel_y;
 		nav_data_packet.bit.accel_z = imu_data.accel_z;
 		
-		nav_data_packet.bit.angularvelocity_x = imu_data.gyro_x;
-		nav_data_packet.bit.angularvelocity_y = imu_data.gyro_y;
-		nav_data_packet.bit.angularvelocity_z = imu_data.gyro_z;
+		//nav_data_packet.bit.angularvelocity_x = imu_data.gyro_x;
+		//nav_data_packet.bit.angularvelocity_y = imu_data.gyro_y;
+		//nav_data_packet.bit.angularvelocity_z = imu_data.gyro_z;
 		
 		nav_data_packet.bit.temperature = imu_data.temp;
 		
 		nav_data_packet.bit.pressure = baro_get_data();
+		
+		
+		MAG_Data mag_data = mag_get_data();
+		nav_data_packet.bit.angularvelocity_x = mag_data.mag_x;
+		nav_data_packet.bit.angularvelocity_y = mag_data.mag_y;
+		nav_data_packet.bit.angularvelocity_z = mag_data.mag_z;
 		
 		
 		txc_data();

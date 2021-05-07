@@ -105,7 +105,7 @@ uint8_t imu_mag_read(uint8_t address) {
 	imu_write(I2C_SLV0_CTRL, 0x80 | 0x01);
 	
 	// wait for transfer to complete
-	delay_us(800);
+	delay_us(1000); // random failiures at 800us
 	
 	imu_user_bank(0);
 	
@@ -132,7 +132,7 @@ void imu_mag_read_n(uint8_t address, uint8_t writeback[], uint8_t size) {
 	imu_write(I2C_SLV0_CTRL, 0x80 | size);
 	
 	// wait for transfer to complete
-	delay_us(2000);
+	delay_us(1000);
 	
 	imu_user_bank(0);
 	
@@ -156,10 +156,10 @@ void imu_mag_write(uint8_t address, uint8_t data) {
 	// enable i2c and send byte
 	imu_write(I2C_SLV0_CTRL, 0x80 | 0x01);
 	
+	delay_ms(10);
+	
 	
 	imu_user_bank(0);
-	
-	delay_ms(1);
 	
 }
 
@@ -168,32 +168,24 @@ void imu_init_magnetometer() {
 	// make sure user bank is 0;
 	imu_user_bank(0);
 	
-	//delay_ms(1); // critical delay, no idea why
-	
 	// enable i2c master
 	imu_write(USER_CTRL, 0b00100000);
-	
-	//delay_ms(1);
-
 	
 	// change bank
 	imu_user_bank(3);
 	
-	//delay_ms(1);
-	
 	// set i2c master clock frequency to type 7 (recommended mode)
 	imu_write(I2C_MST_CTRL, 0x07);
 	
-	//delay_ms(1);
-	
 	// enable delay odr for i2c slave 0
 	imu_write(I2C_MST_DELAY_CTRL, 0x01);
-	
-	//delay_ms(1);
 
 	imu_user_bank(0);
-	
+	//
 	//delay_ms(1);
+	//
+	// set magnetometer to continuous measurment at 100hz
+	imu_mag_write(MAG_CNTL2, 0x08);
 }
 
 
@@ -204,8 +196,7 @@ void imu_init() {
 	// exit sleep mode
 	imu_write(PWR_MGMT_1, 0b00000001);
 	
-	// wait to exit sleep mode
-	//delay_ms(1);
+	// wait to exit sleep mode (unspecified in datasheet)
 	delay_us(80);
 	
 	
@@ -227,11 +218,8 @@ uint8_t imu_check() {
 
 IMU_Data imu_get_data() {
 	IMU_Raw_Data imu_raw_data;
-	
+	// read all IMU data as one string
 	imu_read_16_n(ACCEL_XOUT_H, imu_raw_data.reg, sizeof(imu_raw_data.reg));
-	
-	MAG_Raw_Data mag_raw_data;
-	imu_mag_read_n(MAG_HXL, mag_raw_data.reg, sizeof(mag_raw_data.reg));
 	
 	
 	IMU_Data imu_data;
@@ -265,4 +253,34 @@ IMU_Data imu_get_data() {
 	
 	
 	return imu_data;
+}
+
+
+MAG_Data mag_get_data() {
+	MAG_Raw_Data mag_raw_data;
+	// read all mag registers as one string
+	imu_mag_read_n(MAG_HXL, mag_raw_data.reg, sizeof(mag_raw_data.reg));
+	// read ST2 register to indicate reading has finished and new data can be loaded
+	imu_mag_read(MAG_ST2);
+	
+	
+	MAG_Data mag_data;
+	
+	// convert values to uT floats
+	
+	#define MAG_MAX 32768 // 16 bit signed integer
+	#define MAG_RANGE 4912.0f // +- maximum
+	#define MAG_MULTIPLIER (MAG_RANGE/MAG_MAX)
+	
+	#define X_OFFSET -6.5f
+	#define Y_OFFSET -21.5f
+	#define Z_OFFSET 28.8f
+	
+	
+	mag_data.mag_x = (float) mag_raw_data.bit.mag_x * MAG_MULTIPLIER - X_OFFSET;
+	mag_data.mag_y = (float) mag_raw_data.bit.mag_y * MAG_MULTIPLIER - Y_OFFSET;
+	mag_data.mag_z = (float) mag_raw_data.bit.mag_z * MAG_MULTIPLIER - Z_OFFSET;
+	
+	
+	return mag_data;
 }
