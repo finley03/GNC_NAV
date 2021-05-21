@@ -22,6 +22,20 @@ int main(void) {
 	
 	gps_init_dma();
 	
+	// initialise timer for first iteration
+	start_timer();
+	
+	
+	// create position state variable
+	Position_State position_state;
+	position_state.bit.position_x = 0;
+	position_state.bit.position_y = 0;
+	position_state.bit.position_z = 0;
+	position_state.bit.velocity_x = 0;
+	position_state.bit.velocity_y = 0;
+	position_state.bit.velocity_z = 0;
+	
+	
 	while(1) {
 		delay_ms(20);
 		
@@ -56,10 +70,29 @@ int main(void) {
 		nav_data_packet.bit.pressure = baro_get_data();
 		
 		
-		MAG_Data mag_data = mag_get_data();
-		nav_data_packet.bit.angularvelocity_x = mag_data.mag_x;
-		nav_data_packet.bit.angularvelocity_y = mag_data.mag_y;
-		nav_data_packet.bit.angularvelocity_z = mag_data.mag_z;
+		//MAG_Data mag_data = mag_get_data();
+		nav_data_packet.bit.angularvelocity_x = imu_data.gyro_x;
+		nav_data_packet.bit.angularvelocity_y = imu_data.gyro_y;
+		nav_data_packet.bit.angularvelocity_z = imu_data.gyro_z;
+		
+		
+		// create accelerometer data type
+		Accel_Data accel_data;
+		accel_data.bit.accel_x = imu_data.accel_x;
+		accel_data.bit.accel_y = imu_data.accel_y;
+		accel_data.bit.accel_z = imu_data.accel_z - 9.81; // bad gravity correction just for testing
+		
+		
+		// run kalman predict step
+		kalman_predict_position(&position_state, accel_data);
+		
+		nav_data_packet.bit.position_x = position_state.bit.position_x;
+		nav_data_packet.bit.position_y = position_state.bit.position_y;
+		nav_data_packet.bit.position_z = position_state.bit.position_z;
+		nav_data_packet.bit.velocity_x = position_state.bit.velocity_x;
+		nav_data_packet.bit.velocity_y = position_state.bit.velocity_y;
+		nav_data_packet.bit.velocity_z = position_state.bit.velocity_z;
+		
 		
 		
 		txc_data();
@@ -82,6 +115,7 @@ int system_check() {
 
 void init() {
 	set_clock_48m();
+	init_timer();
 
 	crc_init();
 	

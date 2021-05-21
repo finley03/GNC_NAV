@@ -10,6 +10,7 @@
 #include "baro.h"
 #include "gps.h"
 #include "dma.h"
+#include "kalman.h"
 
 
 #define DEVICE_ID 0xd5d5
