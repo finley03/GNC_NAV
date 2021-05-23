@@ -135,14 +135,10 @@ uint32_t read_timer_20ns() {
 
 
 float read_timer_ms() {
-	#define TIMER_MS_MULTIPLIER (1000.0f/F_CPU)
-	
 	return (float) TC4->COUNT32.COUNT.reg * TIMER_MS_MULTIPLIER;
 }
 
 
 float read_timer_s() {
-	#define TIMER_S_MULTIPLIER (1.0f/F_CPU)
-	
 	return (float) TC4->COUNT32.COUNT.reg * TIMER_S_MULTIPLIER;
 }

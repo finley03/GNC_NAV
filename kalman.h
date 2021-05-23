@@ -40,6 +40,8 @@ typedef union {
 
 void kalman_predict_position(Position_State* state, Accel_Data data);
 
+void kalman_update_position(Position_State* state, Position_State measured_state, float* kalman_gain);
+
 
 
 

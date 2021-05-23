@@ -55,6 +55,20 @@ void mat_add(float* matA, float* matB, uint32_t size, float* writeback) {
 }
 
 
+void mat_subtract(float* matA, float* matB, uint32_t size, float* writeback) {
+	for (uint32_t i = 0; i < size; ++i) {
+		writeback[i] = matA[i] - matB[i];
+	}
+}
+
+
+void mat_copy(float* mat, uint32_t size, float* writeback) {
+	for (uint32_t i = 0; i < size; ++i) {
+		writeback[i] = mat[i];
+	}
+}
+
+
 float mat_det_2x2(float* mat) {
 	return (mat[0] * mat[3]) - (mat[1] * mat[2]);
 }

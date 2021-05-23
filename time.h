@@ -7,6 +7,10 @@
 #define F_CPU 48000000UL
 #endif
 
+#define TIMER_MS_MULTIPLIER (1000.0f/F_CPU)
+#define TIMER_S_MULTIPLIER (1.0f/F_CPU)
+
+
 void set_clock_48m();
 
 void delay_8c(uint32_t n);
