@@ -11,11 +11,17 @@ void mat_add(float* matA, float* matB, uint32_t size, float* writeback);
 
 void mat_subtract(float* matA, float* matB, uint32_t size, float* writeback);
 
+void mat_scalar_product(float* mat, float scalar, uint32_t size, float* writeback);
+
 void mat_copy(float* mat, uint32_t size, float* writeback);
 
 float mat_det_2x2(float* mat);
 
+float mat_det_3x3(float* mat);
+
 void mat_inverse_2x2(float* mat, float* writeback);
+
+void mat_inverse_3x3(float* mat, float* writeback);
 
 
 #endif

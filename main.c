@@ -84,7 +84,7 @@ int main(void) {
 		
 		
 		// run kalman predict step
-		kalman_predict_position(&position_state, accel_data);
+		//kalman_predict_position(&position_state, accel_data);
 		
 		nav_data_packet.bit.position_x = position_state.bit.position_x;
 		nav_data_packet.bit.position_y = position_state.bit.position_y;

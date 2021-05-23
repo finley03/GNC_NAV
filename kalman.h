@@ -34,13 +34,28 @@ typedef struct __attribute__((packed)) {
 typedef union {
 	Accel_Data_Type bit;
 	
-	float reg[sizeof(Accel_Data_Type)];
+	float reg[sizeof(Accel_Data_Type) / sizeof(float)];
 } Accel_Data;
 
+// data arrangement for position measurement vector
+typedef struct __attribute__((packed)) {
+	float position_x;
+	float position_y;
+	float position_z;
+} Position_Data_Type;
 
-void kalman_predict_position(Position_State* state, Accel_Data data);
+// union for positon measurement vector
+typedef union {
+	Position_Data_Type bit;
+	
+	float reg[sizeof(Position_Data_Type) / sizeof(float)];
+} Position_Data;
 
-void kalman_update_position(Position_State* state, Position_State measured_state, float* kalman_gain);
+
+
+void kalman_predict_position(Position_State* state, Accel_Data data, float* estimate_uncertainty, float* process_uncertainty);
+
+void kalman_update_position(Position_State* state, Position_Data data, float* estimate_uncertainty, float* measurement_uncertainty);
 
 
 
