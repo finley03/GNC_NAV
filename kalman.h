@@ -5,6 +5,12 @@
 #include "mat.h"
 
 
+
+// assume acceleration standard deviation of 3
+#define KALMAN_ACCEL_VARIANCE 9
+
+
+
 // data arrangement of state vector
 typedef struct __attribute__((packed)) {
 	float position_x;
@@ -53,9 +59,11 @@ typedef union {
 
 
 
-void kalman_predict_position(Position_State* state, Accel_Data data, float* estimate_uncertainty, float* process_uncertainty);
+void kalman_predict_position(Position_State* state, Accel_Data data, float* estimate_uncertainty);
 
 void kalman_update_position(Position_State* state, Position_Data data, float* estimate_uncertainty, float* measurement_uncertainty);
+
+void kalman_measurement_uncertainty(float* writeback, float hAcc, float vAcc);
 
 
 

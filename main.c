@@ -36,6 +36,20 @@ int main(void) {
 	position_state.bit.velocity_z = 0;
 	
 	
+	// set initial estimate uncertainty;
+	float estimate_uncertainty[36] = {
+		1000, 0, 0, 0, 0, 0,
+		0, 1000, 0, 0, 0, 0,
+		0, 0, 1000, 0, 0, 0,
+		0, 0, 0, 1000, 0, 0,
+		0, 0, 0, 0, 1000, 0,
+		0, 0, 0, 0, 0, 1000
+	};
+	
+	// create measurement uncertainty variable
+	float measurement_uncertainty[9];
+	
+	
 	while(1) {
 		delay_ms(20);
 		
@@ -53,6 +67,31 @@ int main(void) {
 			nav_data_packet.bit.h_acc = hAcc;
 			nav_data_packet.bit.v_acc = vAcc;
 			nav_data_packet.bit.gps_satellites = ubx_nav_pvt.bit.numSV;
+			
+			
+			if (nav_data_packet.bit.h_acc >= 50) continue;
+			
+			
+			// run kalman update step
+			
+			// update measurement uncertainty
+			kalman_measurement_uncertainty(measurement_uncertainty, hAcc, vAcc);
+			
+			// get cartesian coordinates or current position
+			float x, y;
+			
+			gps_cartesian(latitude, longitude, &x, &y);
+			
+			// create measurement type
+			Position_Data position_data;
+			position_data.bit.position_x = x;
+			position_data.bit.position_y = y;
+			position_data.bit.position_z = height;
+			
+			
+			kalman_update_position(&position_state, position_data, estimate_uncertainty, measurement_uncertainty);
+			
+			
 		}
 		
 		
@@ -82,9 +121,10 @@ int main(void) {
 		accel_data.bit.accel_y = imu_data.accel_y;
 		accel_data.bit.accel_z = imu_data.accel_z - 9.81; // bad gravity correction just for testing
 		
-		
-		// run kalman predict step
-		//kalman_predict_position(&position_state, accel_data);
+		if (nav_data_packet.bit.h_acc < 50) {
+			// run kalman predict step
+			kalman_predict_position(&position_state, accel_data, estimate_uncertainty);
+		}
 		
 		nav_data_packet.bit.position_x = position_state.bit.position_x;
 		nav_data_packet.bit.position_y = position_state.bit.position_y;

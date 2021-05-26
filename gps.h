@@ -73,6 +73,8 @@ UBX_NAV_PVT_Type ubx_nav_pvt;
 
 void configure_gps();
 
+void gps_cartesian(float latitude, float longitude, float* x, float* y);
+
 
 //void gps_init_dma();
 //

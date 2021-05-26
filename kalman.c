@@ -4,7 +4,7 @@
 // global file variable for last time
 uint32_t predict_previous_time;
 
-void kalman_predict_position(Position_State* state, Accel_Data data, float* estimate_uncertainty, float* process_uncertainty) {
+void kalman_predict_position(Position_State* state, Accel_Data data, float* estimate_uncertainty) {
 	// get current time
 	uint32_t current_time = read_timer_20ns();
 	// calculate time difference
@@ -15,6 +15,10 @@ void kalman_predict_position(Position_State* state, Accel_Data data, float* esti
 	float i_time = delta_time * TIMER_S_MULTIPLIER;
 	// get square value
 	float i_time_squared = i_time * i_time;
+	// get cubed value
+	float i_time_cubed = i_time_squared * i_time;
+	// get value ^ 4
+	float i_time_4 = i_time_squared * i_time_squared;
 	
 	
 	//----------STATE EXTRAPOLATION----------//
@@ -56,6 +60,27 @@ void kalman_predict_position(Position_State* state, Accel_Data data, float* esti
 	mat_add(Fx, Gu, 6, state->reg);
 	
 	
+	//----------CALCULATE PROCESS UNCERTAINTY----------//
+	
+	
+	// calculate position variance
+	float x_var = i_time_4 * 0.25 * KALMAN_ACCEL_VARIANCE;
+	// calculate velocity variance
+	float v_var = i_time_squared * KALMAN_ACCEL_VARIANCE;
+	// calculate position velocity covariance
+	float xv_cov = i_time_cubed * 0.5 *	KALMAN_ACCEL_VARIANCE;
+	
+	// process uncertainty matrix
+	float Q[36] = {
+		x_var, 0, 0, xv_cov, 0, 0,
+		0, x_var, 0, 0, xv_cov, 0,
+		0, 0, x_var, 0, 0, xv_cov,
+		xv_cov, 0, 0, v_var, 0, 0,
+		0, xv_cov, 0, 0, v_var, 0,
+		0, 0, xv_cov, 0, 0, v_var
+	};
+	
+	
 	//----------UNCERTAINTY EXTRAPOLATION----------//
 	
 	
@@ -77,7 +102,7 @@ void kalman_predict_position(Position_State* state, Accel_Data data, float* esti
 	mat_multiply(FP, 6, 6, F_t, 6, 6, FPF_t);
 	
 	// add process noise and write back to estimate uncertainty
-	mat_add(FPF_t, process_uncertainty, 36, estimate_uncertainty);
+	mat_add(FPF_t, Q, 36, estimate_uncertainty);
 	
 }
 
@@ -240,4 +265,26 @@ void kalman_update_position(Position_State* state, Position_Data data, float* es
 	mat_add(I6_KHPI6_KH_t, KRK_t, 36, estimate_uncertainty);
 
 	
+}
+
+
+void kalman_measurement_uncertainty(float* writeback, float hAcc, float vAcc) {
+	// given values for accuracy should be standard deviation
+	// square values to get variance
+	float hAcc_2 = hAcc * hAcc;
+	float vAcc_2 = vAcc * vAcc;
+	
+	// x axis variance
+	// set covariance values to 0
+	writeback[0] = hAcc_2;
+	writeback[1] = 0;
+	writeback[2] = 0;
+	writeback[3] = 0;
+	// y axis variance
+	writeback[4] = hAcc_2;
+	writeback[5] = 0;
+	writeback[6] = 0;
+	writeback[7] = 0;
+	// z axis variance
+	writeback[8] = vAcc_2;
 }

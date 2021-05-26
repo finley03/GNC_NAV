@@ -1,6 +1,9 @@
 #include "gps.h"
 
 
+#include <math.h>
+
+
 void gps_tx_msg(const uint8_t msg[], uint16_t msg_size) {
 	for (uint16_t i = 0; i < msg_size; ++i) {
 		gps_uart_send(msg[i]);
@@ -227,4 +230,16 @@ void configure_gps() {
 	
 	
 	
+}
+
+
+
+void gps_cartesian(float latitude, float longitude, float* x, float* y) {
+	float multiplier = 111194.9266;
+	float zero_lat = 50.000000;
+	float zero_long = 0.000000;
+	float pi_180 = 0.01745329;
+	
+	*y = (latitude - zero_lat) * multiplier;
+	*x = (longitude - zero_long) * multiplier * cos(latitude * pi_180);
 }
