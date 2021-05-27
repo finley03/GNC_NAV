@@ -187,6 +187,13 @@ const uint8_t UBX_CFG_MSG_enableUBX_NAV_PVT[] = {
 	0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x1B, 0xEC
 };
 
+// set rate to 5hz
+
+const uint8_t UBX_CFG_MSG_set_rate_5Hz[] = {
+	0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00,
+	0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A
+};
+
 
 
 
@@ -227,8 +234,7 @@ void configure_gps() {
 	gps_tx_msg(UBX_CFG_MSG_disableRMC, sizeof(UBX_CFG_MSG_disableRMC));
 	gps_tx_msg(UBX_CFG_MSG_disableVTG, sizeof(UBX_CFG_MSG_disableVTG));
 	gps_tx_msg(UBX_CFG_MSG_enableUBX_NAV_PVT, sizeof(UBX_CFG_MSG_enableUBX_NAV_PVT));
-	
-	
+	gps_tx_msg(UBX_CFG_MSG_set_rate_5Hz, sizeof(UBX_CFG_MSG_set_rate_5Hz));
 	
 }
 

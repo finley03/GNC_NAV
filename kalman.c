@@ -110,7 +110,7 @@ void kalman_predict_position(Position_State* state, Accel_Data data, float* esti
 
 uint32_t update_previous_time;
 
-void kalman_update_position(Position_State* state, Position_Data data, float* estimate_uncertainty, float* measurement_uncertainty) {
+float kalman_update_position(Position_State* state, Position_Data data, float* estimate_uncertainty, float* measurement_uncertainty) {
 	// get current time
 	uint32_t current_time = read_timer_20ns();
 	// calculate time difference
@@ -192,11 +192,12 @@ void kalman_update_position(Position_State* state, Position_Data data, float* es
 	// multiply by kalman gain
 	mat_multiply(K, 6, 3, innovation, 3, 1, Ki);
 	
-	// add values
-	mat_add(state->reg, Ki, 3, new_state);
+	// add values (corrected dimension error)
+	mat_add(state->reg, Ki, 6, new_state);
 	
 	// copy to state matrix
 	mat_copy(new_state, 6, state->reg);
+	
 	
 	
 	//----------UPDATE ESTIMATE UNCERTAINTY----------
@@ -256,6 +257,13 @@ void kalman_update_position(Position_State* state, Position_Data data, float* es
 	// multiply kalman gain by measurement uncertainty
 	mat_multiply(K, 6, 3, measurement_uncertainty, 3, 3, KR);
 	
+	// untested
+	
+	
+	// calculate transpose of K
+	mat_transpose(K, 6, 3, K_t);
+	
+	
 	// multiply K_t by result
 	mat_multiply(KR, 6, 3, K_t, 3, 6, KRK_t);
 	
@@ -263,6 +271,12 @@ void kalman_update_position(Position_State* state, Position_Data data, float* es
 	
 	// add final result
 	mat_add(I6_KHPI6_KH_t, KRK_t, 36, estimate_uncertainty);
+	
+	
+	
+	
+	
+	return K[0];
 
 	
 }

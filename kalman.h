@@ -61,7 +61,7 @@ typedef union {
 
 void kalman_predict_position(Position_State* state, Accel_Data data, float* estimate_uncertainty);
 
-void kalman_update_position(Position_State* state, Position_Data data, float* estimate_uncertainty, float* measurement_uncertainty);
+float kalman_update_position(Position_State* state, Position_Data data, float* estimate_uncertainty, float* measurement_uncertainty);
 
 void kalman_measurement_uncertainty(float* writeback, float hAcc, float vAcc);
 

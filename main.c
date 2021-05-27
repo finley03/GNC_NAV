@@ -89,7 +89,7 @@ int main(void) {
 			position_data.bit.position_z = height;
 			
 			
-			kalman_update_position(&position_state, position_data, estimate_uncertainty, measurement_uncertainty);
+			nav_data_packet.bit.pressure = kalman_update_position(&position_state, position_data, estimate_uncertainty, measurement_uncertainty);
 			
 			
 		}
@@ -106,7 +106,8 @@ int main(void) {
 		
 		nav_data_packet.bit.temperature = imu_data.temp;
 		
-		nav_data_packet.bit.pressure = baro_get_data();
+		//nav_data_packet.bit.pressure = baro_get_data();
+		//nav_data_packet.bit.pressure = estimate_uncertainty[0];
 		
 		
 		//MAG_Data mag_data = mag_get_data();
