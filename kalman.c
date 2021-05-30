@@ -416,6 +416,9 @@ void kalman_predict_orientation(Orientation_State* state, Gyro_Data data, float*
 	// add resulting vectors and write back to state
 	mat_add(Fx, Gu, 3, state->reg);
 	
+	// set angle range
+	kalman_set_axes_range(state->reg);
+	
 	
 	//----------CALCULATE PROCESS UNCERTAINTY----------//
 	
@@ -471,6 +474,15 @@ void kalman_update_orientation(Orientation_State* state, Orientation_State data,
 	float i_time = delta_time * TIMER_S_MULTIPLIER;
 	// get square value
 	float i_time_squared = i_time * i_time;
+	
+	
+	
+	if (state->bit.orientation_x > data.bit.orientation_x + 180) data.bit.orientation_x += 360;
+	if (state->bit.orientation_x < data.bit.orientation_x - 180) data.bit.orientation_x -= 360;
+	
+	if (state->bit.orientation_z > data.bit.orientation_z + 180) data.bit.orientation_z += 360;
+	if (state->bit.orientation_z < data.bit.orientation_z - 180) data.bit.orientation_z -= 360;
+	
 		
 		
 	//----------CALCULATE KALMAN GAIN----------//
@@ -547,6 +559,9 @@ void kalman_update_orientation(Orientation_State* state, Orientation_State data,
 		
 	// copy to state matrix
 	mat_copy(new_state, 3, state->reg);
+	
+	// set angle range
+	kalman_set_axes_range(state->reg);
 		
 		
 		
@@ -681,4 +696,36 @@ Orientation_State kalman_orientation_generate_state(MAG_Data mag_data, Accel_Dat
 	}
 	
 	return orientation_state;
+}
+
+
+
+void kalman_set_axes_range(float* array) {
+	// set x axis
+	if (array[0] > 180) array[0] -= 360;
+	else if (array[0] < -180) array[0] += 360;
+	
+	// set z axis
+	if (array[2] > 180) array[2] -= 360;
+	else if (array[2] < -180) array[2] += 360;
+	
+	// set y axis
+	if (array[1] > 90) {
+		array[1] = 180 - array[1];
+		
+		if (array[0] >= 0) array[0] -= 180;
+		else if (array[0] < 0) array[0] += 180;
+		
+		if (array[2] >= 0) array[2] -= 180;
+		else if (array[2] < 0) array[2] += 180;
+	}
+	else if (array[1] < -90) {
+		array[1] = -180 - array[1];
+		
+		if (array[0] >= 0) array[0] -= 180;
+		else if (array[0] < 0) array[0] += 180;
+		
+		if (array[2] >= 0) array[2] -= 180;
+		else if (array[2] < 0) array[2] += 180;
+	}
 }

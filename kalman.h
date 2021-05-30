@@ -119,6 +119,8 @@ void kalman_update_orientation(Orientation_State* state, Orientation_State data,
 
 Orientation_State kalman_orientation_generate_state(MAG_Data mag_data, Accel_Data accel_data);
 
+void kalman_set_axes_range(float* array);
+
 
 
 
