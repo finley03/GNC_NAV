@@ -157,6 +157,16 @@ typedef struct {
 } MAG_Data;
 
 
+typedef struct {
+	float bias_x;
+	float bias_y;
+	float bias_z;
+	float scale_x;
+	float scale_y;
+	float scale_z;
+} MAG_Cal_Data;
+
+
 // IMU must be initialised to prevent
 // switching to i2c mode
 void imu_init();
@@ -179,6 +189,11 @@ IMU_Data imu_get_data();
 // this function is extremely slow, and does not utilise DMA
 // should only be used periocially to avoid hanging the system
 MAG_Data mag_get_data();
+
+// get magnetometer calibration data
+// takes large amount of time to gather data
+// requires user to move board
+MAG_Cal_Data mag_cal();
 
 
 

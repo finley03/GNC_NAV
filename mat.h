@@ -23,5 +23,9 @@ void mat_inverse_2x2(float* mat, float* writeback);
 
 void mat_inverse_3x3(float* mat, float* writeback);
 
+void mat_crossp(float* mat1, float* mat2, float* writeback);
+
+void mat_3_normalize(float* mat, float* writeback);
+
 
 #endif

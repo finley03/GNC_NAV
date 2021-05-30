@@ -86,4 +86,26 @@ typedef union __attribute__((aligned(4))) {
 } NAV_Selftest_Packet;
 
 
+typedef struct __attribute__((aligned(4))) {
+	uint16_t device_id;
+	
+	float bias_x;
+	float bias_y;
+	float bias_z;
+	
+	float scale_x;
+	float scale_y;
+	float scale_z;
+	
+	uint32_t crc;
+} MAG_Cal_Data_Packet_Type;
+
+
+typedef union __attribute__((aligned(4))) {
+	MAG_Cal_Data_Packet_Type bit;
+	
+	uint8_t reg[sizeof(MAG_Cal_Data_Packet_Type)];
+} Mag_Cal_Data_Packet;
+
+
 #define LED PORT_PA02

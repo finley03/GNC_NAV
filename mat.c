@@ -1,5 +1,9 @@
 #include "mat.h"
 
+
+#include <math.h>
+
+
 // matrix multiply
 // requires row major input
 // gives row major output
@@ -123,4 +127,20 @@ void mat_inverse_3x3(float* mat, float* writeback) {
 	
 	// multiply by inverse determinant
 	mat_scalar_product(cofactors_t, invdet, 9, writeback);
+}
+
+
+void mat_crossp(float* mat1, float* mat2, float* writeback) {
+	writeback[0] = mat1[1] * mat2[2] - mat1[2] * mat2[1];
+	writeback[1] = mat1[2] * mat2[0] - mat1[0] * mat2[2];
+	writeback[2] = mat1[0] * mat2[1] - mat1[1] * mat2[0];
+}
+
+
+void mat_3_normalize(float* mat, float* writeback) {
+	float scalar = 1 / sqrt(mat[0] * mat[0] + mat[1] * mat[1] + mat[2] * mat[2]);
+	
+	writeback[0] = mat[0] * scalar;
+	writeback[1] = mat[1] * scalar;
+	writeback[2] = mat[2] * scalar;
 }
