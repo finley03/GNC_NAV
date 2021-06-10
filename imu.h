@@ -4,6 +4,9 @@
 #include "samd21e18a.h"
 #include "time.h"
 #include "spi.h"
+#include "util.h"
+
+#include <math.h>
 
 #define IMU_WRITE_MASK 0x7f
 #define IMU_READ_MASK 0x80
@@ -103,6 +106,17 @@
 
 
 
+#define ACCEL_FS_SEL_2 0x00
+#define ACCEL_FS_SEL_4 0x01
+#define ACCEL_FS_SEL_8 0x02
+#define ACCEL_FS_SEL_16 0x03
+#define GYRO_FS_SEL_250 0x00
+#define GYRO_FS_SEL_500 0x01
+#define GYRO_FS_SEL_1000 0x02
+#define GYRO_FS_SEL_2000 0x03
+
+
+
 typedef struct {
 	int16_t accel_x;
 	int16_t accel_y;
@@ -177,13 +191,9 @@ void imu_init();
 uint8_t imu_check();
 
 
-// changes user bank accessible by spi
-void imu_user_bank(uint8_t bank);
-
-
 
 // get formatted IMU data
-IMU_Data imu_get_data();
+IMU_Data imu_get_data(float* debug);
 
 
 // this function is extremely slow, and does not utilise DMA
@@ -194,6 +204,9 @@ MAG_Data mag_get_data();
 // takes large amount of time to gather data
 // requires user to move board
 MAG_Cal_Data mag_cal();
+
+
+uint8_t mag_check();
 
 
 

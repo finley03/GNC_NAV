@@ -7,10 +7,11 @@
 // Position Kalman Filter
 
 
-// global file variable for last time
-uint32_t predict_position_previous_time;
+//// global file variable for last time
+//uint32_t predict_position_previous_time;
 
 Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation, float* estimate_uncertainty) {
+	static uint32_t predict_position_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
 	// calculate time difference
@@ -41,34 +42,22 @@ Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orien
 	float cosy = cos(orientation.bit.orientation_y * pi_180);
 	float cosz = cos(orientation.bit.orientation_z * pi_180);
 	
+	// correct error in variables
 	float euler_mat[9] = {
 		cosy*cosz, sinx*siny*cosz-cosx*sinz, cosx*siny*cosz+sinx*sinz,
-		cosy*sinz, sinz*siny*sinz+cosx*cosy, cosx*siny*sinz-sinx*cosz,
+		cosy*sinz, sinz*siny*sinz+cosx*cosz, cosx*siny*sinz-sinx*cosz,
 		-siny, sinx*cosy, cosx*cosy
 	};
 	
-	// matrix to convert between orientation coordinate system and position coordinate system
-	float euler_csys_mat[9] = {
-		0, 1, 0,
-		1, 0, 0,
-		0, 0, -1		
-	};
-	
-	// matrix of euler mat right multiplied by csys conversion
-	float euler_temp[9];
-	// matrix of euler mat transformed for csys conversion
-	float euler_mat_transformed[9];
-	
-	mat_multiply(euler_mat, 3, 3, euler_csys_mat, 3, 3, euler_temp);
-	mat_multiply(euler_csys_mat, 3, 3, euler_temp, 3, 3, euler_mat_transformed);
 	
 	// vector of transformed accel data
 	float accel_data[3];
 	
-	mat_multiply(euler_mat_transformed, 3, 3, data.reg, 3, 1, accel_data);
+	mat_multiply(euler_mat, 3, 3, data.reg, 3, 1, accel_data);
 	
-	// subtract gravity offset from z axis
-	accel_data[2] -= 9.80665;
+	// add gravity offset to Z axis
+	// z is down therefore gravity gives negative acceleration
+	accel_data[2] += 9.80665;
 	
 	
 	
@@ -161,10 +150,11 @@ Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orien
 }
 
 
-
-uint32_t update_position_previous_time;
+//
+//uint32_t update_position_previous_time;
 
 void kalman_update_position(Position_State* state, Position_Data data, float* estimate_uncertainty, float* measurement_uncertainty) {
+	static uint32_t update_position_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
 	// calculate time difference
@@ -357,9 +347,10 @@ void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float
 
 // Orientation Kalman Filter
 
-uint32_t predict_orientation_previous_time;
+//uint32_t predict_orientation_previous_time;
 
 void kalman_predict_orientation(Orientation_State* state, Gyro_Data data, float* estimate_uncertainty) {
+	static uint32_t predict_orientation_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
 	// calculate time difference
@@ -386,20 +377,30 @@ void kalman_predict_orientation(Orientation_State* state, Gyro_Data data, float*
 	// create control matrix
 	// convert angular velocity in body frame to change in euler angles in north east down frame
 	
-	float pi_180 = 0.01745329;
+	const float pi_180 = 0.01745329;
 	
+	//float sinx = sin(state->bit.orientation_x * pi_180);
+	//float siny = sin(state->bit.orientation_y * pi_180);
+	//float sinz = sin(state->bit.orientation_z * pi_180);
+	//float cosx = cos(state->bit.orientation_x * pi_180);
+	//float cosy = cos(state->bit.orientation_y * pi_180);
+	//float cosz = cos(state->bit.orientation_z * pi_180);
 	float sinx = sin(state->bit.orientation_x * pi_180);
-	float siny = sin(state->bit.orientation_y * pi_180);
-	float sinz = sin(state->bit.orientation_z * pi_180);
 	float cosx = cos(state->bit.orientation_x * pi_180);
 	float cosy = cos(state->bit.orientation_y * pi_180);
-	float cosz = cos(state->bit.orientation_z * pi_180);
+	float tany = tan(state->bit.orientation_y * pi_180);
+	float secy = 1 / cosy;
 	
 	float G[9] = {
-		(cosy*cosz)*i_time, (sinx*siny*cosz-cosx*sinz)*i_time, (cosx*siny*cosz+sinx*sinz)*i_time,
-		(cosy*sinz)*i_time, (sinz*siny*sinz+cosx*cosy)*i_time, (cosx*siny*sinz-sinx*cosz)*i_time,
-		(-siny)*i_time, (sinx*cosy)*i_time, (cosx*cosy)*i_time
+		(1)*i_time, (sinx*tany)*i_time, (cosx*tany)*i_time,
+		0, (cosx)*i_time, (-sinx)*i_time,
+		0, (sinx*secy)*i_time, (cosx*secy)*i_time
 	};
+	//float G[9] = {
+		//(cosy*cosz)*i_time, (sinx*siny*cosz-cosx*sinz)*i_time, (cosx*siny*cosz+sinx*sinz)*i_time,
+		//(cosy*sinz)*i_time, (sinz*siny*sinz+cosx*cosz)*i_time, (cosx*siny*sinz-sinx*cosz)*i_time,
+		//(-siny)*i_time, (sinx*cosy)*i_time, (cosx*cosy)*i_time
+	//};
 	
 	
 	// multiplication result from state multiplied by state transition
@@ -461,9 +462,10 @@ void kalman_predict_orientation(Orientation_State* state, Gyro_Data data, float*
 }
 
 
-uint32_t update_orientation_previous_time;
+//uint32_t update_orientation_previous_time;
 
 void kalman_update_orientation(Orientation_State* state, Orientation_State data, float* estimate_uncertainty, float* measurement_uncertainty) {
+	static uint32_t update_orientation_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
 	// calculate time difference
@@ -641,11 +643,15 @@ Orientation_State kalman_orientation_generate_state(MAG_Data mag_data, Accel_Dat
 	// define vectors for calculating orientation
 	float north[3], east[3], down[3];
 	
-	// transform accelerometer east-north-up to north-east-down and negate to get down vector from gravity vector
+	//// transform accelerometer east-north-up to north-east-down and negate to get down vector from gravity vector
+	// no transformations needed other than negation
 	float accel[3];
-	accel[0] = -accel_data.bit.accel_y;
-	accel[1] = -accel_data.bit.accel_x;
-	accel[2] = accel_data.bit.accel_z;
+	//accel[0] = -accel_data.bit.accel_y;
+	//accel[1] = -accel_data.bit.accel_x;
+	//accel[2] = accel_data.bit.accel_z;
+	accel[0] = -accel_data.bit.accel_x;
+	accel[1] = -accel_data.bit.accel_y;
+	accel[2] = -accel_data.bit.accel_z;
 	
 	// normalize accel data and write to down
 	// gravity should somewhat follow down

@@ -3,6 +3,7 @@
 
 void init();
 void txc_data();
+void system_check();
 
 
 NAV_Selftest_Packet nav_selftest_packet;
@@ -12,21 +13,18 @@ NAV_Data_Packet nav_data_packet;
 int main(void) {
 	init();
 	
-	nav_selftest_packet.bit.device_id = DEVICE_ID;
 	nav_data_packet.bit.device_id = DEVICE_ID;
-	nav_selftest_packet.bit.imu_code = imu_check();
-	nav_selftest_packet.bit.baro_code = baro_check();
-	
-	
 	
 	MAG_Cal_Data mag_cal_data = mag_cal();
-
-	
 	
 	gps_init_dma();
 	
 	// initialise timer for first iteration
 	start_timer();
+	
+	
+	MAG_Data mag_data;
+	Accel_Data accel_data;
 	
 	
 	// create position state variable
@@ -70,9 +68,9 @@ int main(void) {
 	
 	// set orientation measurement uncertainty
 	float orientation_measurement_uncertainty[9] = {
-		3600, 0, 0,
-		0, 3600, 0,
-		0, 0, 3600
+		8000, 0, 0,
+		0, 8000, 0,
+		0, 0, 8000
 	};
 	
 	// accelerometer magnetometer orientation estimate
@@ -115,7 +113,7 @@ int main(void) {
 			Position_Data position_data;
 			position_data.bit.position_x = x;
 			position_data.bit.position_y = y;
-			position_data.bit.position_z = height;
+			position_data.bit.position_z = -height;
 			
 			
 			kalman_update_position(&position_state, position_data, position_estimate_uncertainty, position_measurement_uncertainty);
@@ -124,51 +122,34 @@ int main(void) {
 			
 			// run orientation kalman update step
 			
+			
+			
+			accel_mag_orientation = kalman_orientation_generate_state(mag_data, accel_data);
+			
 			kalman_update_orientation(&orientation_state, accel_mag_orientation, orientation_estimate_uncertainty, orientation_measurement_uncertainty);
 			
 		}
 		
 		
-		IMU_Data imu_data = imu_get_data();
-		//nav_data_packet.bit.accel_x = imu_data.accel_x;
-		//nav_data_packet.bit.accel_y = imu_data.accel_y;
-		//nav_data_packet.bit.accel_z = imu_data.accel_z;
-
-		
-		nav_data_packet.bit.temperature = imu_data.temp;
-		
-		//nav_data_packet.bit.pressure = baro_get_data();
-		//nav_data_packet.bit.pressure = estimate_uncertainty[0];
+		IMU_Data imu_data = imu_get_data(&nav_data_packet.bit.debug1);
 		
 		
 		MAG_Data mag_data_uncalibrated = mag_get_data();
-		MAG_Data mag_data;
+		//MAG_Data mag_data;
 		mag_data.mag_x = (mag_data_uncalibrated.mag_x - mag_cal_data.bias_x) * mag_cal_data.scale_x;
 		mag_data.mag_y = (mag_data_uncalibrated.mag_y - mag_cal_data.bias_y) * mag_cal_data.scale_y;
 		mag_data.mag_z = (mag_data_uncalibrated.mag_z - mag_cal_data.bias_z) * mag_cal_data.scale_z;
 		
-		//nav_data_packet.bit.accel_x = mag_data.mag_x;
-		//nav_data_packet.bit.accel_y = mag_data.mag_y;
-		//nav_data_packet.bit.accel_z = mag_data.mag_z;
-		
-		nav_data_packet.bit.angularvelocity_x = imu_data.gyro_x;
-		nav_data_packet.bit.angularvelocity_y = imu_data.gyro_y;
-		nav_data_packet.bit.angularvelocity_z = imu_data.gyro_z;
-		
-		
 		// create accelerometer data type
-		Accel_Data accel_data;
 		accel_data.bit.accel_x = imu_data.accel_x;
 		accel_data.bit.accel_y = imu_data.accel_y;
-		accel_data.bit.accel_z = imu_data.accel_z; // bad gravity correction just for testing
+		accel_data.bit.accel_z = imu_data.accel_z;
 		
 		Gyro_Data gyro_data;
 		gyro_data.bit.rotation_x = imu_data.gyro_x;
 		gyro_data.bit.rotation_y = imu_data.gyro_y;
 		gyro_data.bit.rotation_z = imu_data.gyro_z;
 		
-		
-		accel_mag_orientation = kalman_orientation_generate_state(mag_data, accel_data);
 		
 		Accel_Data transformed_accel;
 		
@@ -181,22 +162,40 @@ int main(void) {
 		nav_data_packet.bit.position_x = position_state.bit.position_x;
 		nav_data_packet.bit.position_y = position_state.bit.position_y;
 		nav_data_packet.bit.position_z = position_state.bit.position_z;
+		
 		nav_data_packet.bit.velocity_x = position_state.bit.velocity_x;
 		nav_data_packet.bit.velocity_y = position_state.bit.velocity_y;
 		nav_data_packet.bit.velocity_z = position_state.bit.velocity_z;
 		
-		nav_data_packet.bit.rotation_x = orientation_state.bit.orientation_x;
-		nav_data_packet.bit.rotation_y = orientation_state.bit.orientation_y;
-		nav_data_packet.bit.rotation_z = orientation_state.bit.orientation_z;
-		//nav_data_packet.bit.rotation_x = accel_mag_orientation.bit.orientation_x;
-		//nav_data_packet.bit.rotation_y = accel_mag_orientation.bit.orientation_y;
-		//nav_data_packet.bit.rotation_z = accel_mag_orientation.bit.orientation_z;
+		nav_data_packet.bit.orientation_x = orientation_state.bit.orientation_x;
+		nav_data_packet.bit.orientation_y = orientation_state.bit.orientation_y;
+		nav_data_packet.bit.orientation_z = orientation_state.bit.orientation_z;
 		
-		//nav_data_packet.bit.pressure = mag_cal_data.bias_x;
+		nav_data_packet.bit.accelmagorientation_x = accel_mag_orientation.bit.orientation_x;
+		nav_data_packet.bit.accelmagorientation_y = accel_mag_orientation.bit.orientation_y;
+		nav_data_packet.bit.accelmagorientation_z = accel_mag_orientation.bit.orientation_z;
+		
+		nav_data_packet.bit.angularvelocity_x = imu_data.gyro_x;
+		nav_data_packet.bit.angularvelocity_y = imu_data.gyro_y;
+		nav_data_packet.bit.angularvelocity_z = imu_data.gyro_z;
 		
 		nav_data_packet.bit.accel_x = transformed_accel.bit.accel_x;
 		nav_data_packet.bit.accel_y = transformed_accel.bit.accel_y;
 		nav_data_packet.bit.accel_z = transformed_accel.bit.accel_z;
+		
+		nav_data_packet.bit.accelraw_x = imu_data.accel_x;
+		nav_data_packet.bit.accelraw_y = imu_data.accel_y;
+		nav_data_packet.bit.accelraw_z = imu_data.accel_z;
+		
+		nav_data_packet.bit.mag_x = mag_data.mag_x;
+		nav_data_packet.bit.mag_y = mag_data.mag_y;
+		nav_data_packet.bit.mag_z = mag_data.mag_z;
+		
+		nav_data_packet.bit.imu_temperature = imu_data.temp;
+		
+		//nav_data_packet.bit.debug1 = 1;
+		nav_data_packet.bit.debug2 = 2;
+		
 		
 		txc_data();
 	}
@@ -206,13 +205,18 @@ int main(void) {
 
 
 
-int system_check() {
-	uint8_t state = 0;
+void system_check() {
+	nav_selftest_packet.bit.device_id = DEVICE_ID;
+	nav_selftest_packet.bit.baro_code = baro_check();
+	nav_selftest_packet.bit.imu_code = imu_check();
+	nav_selftest_packet.bit.mag_code = mag_check();
 	
-	if (imu_check() != 0) state = 1;
-	if (baro_check() != 0) state = 1;
-	
-	return state;
+	if (!nav_selftest_packet.bit.baro_code && !nav_selftest_packet.bit.imu_code && !nav_selftest_packet.bit.mag_code) {
+		nav_selftest_packet.bit.device_code = 0;
+	}
+	else {
+		nav_selftest_packet.bit.device_code = 1;
+	}
 }
 
 
@@ -237,7 +241,7 @@ void init() {
 	
 	// set LED to output
 	REG_PORT_DIRSET0 = LED;
-	REG_PORT_OUTSET0 = LED;
+	//REG_PORT_OUTSET0 = LED;
 	
 	
 
@@ -262,6 +266,8 @@ void txc_data() {
 		
 		switch (command) {
 			case 0x80: // selftest data packet
+				system_check();
+			
 				nav_selftest_packet.bit.crc = gen_crc32((uint32_t) &nav_selftest_packet.reg[0], sizeof(nav_selftest_packet.reg) - 4);
 				
 				for (uint16_t i = 0; i < sizeof(nav_selftest_packet.reg); ++i) {
