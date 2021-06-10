@@ -128,10 +128,14 @@ int main(void) {
 			
 			kalman_update_orientation(&orientation_state, accel_mag_orientation, orientation_estimate_uncertainty, orientation_measurement_uncertainty);
 			
+			
+			// get barometer pressure readings
+			nav_data_packet.bit.pressure = baro_get_pressure(&nav_data_packet.bit.baro_temperature);
+			
 		}
 		
 		
-		IMU_Data imu_data = imu_get_data(&nav_data_packet.bit.debug1);
+		IMU_Data imu_data = imu_get_data();
 		
 		
 		MAG_Data mag_data_uncalibrated = mag_get_data();
@@ -193,7 +197,7 @@ int main(void) {
 		
 		nav_data_packet.bit.imu_temperature = imu_data.temp;
 		
-		//nav_data_packet.bit.debug1 = 1;
+		nav_data_packet.bit.debug1 = 1;
 		nav_data_packet.bit.debug2 = 2;
 		
 		

@@ -193,7 +193,7 @@ uint8_t imu_check();
 
 
 // get formatted IMU data
-IMU_Data imu_get_data(float* debug);
+IMU_Data imu_get_data();
 
 
 // this function is extremely slow, and does not utilise DMA

@@ -228,7 +228,7 @@ uint8_t mag_check() {
 }
 
 
-IMU_Data imu_get_data(float* debug) {
+IMU_Data imu_get_data() {
 	IMU_Raw_Data imu_raw_data;
 	// read all IMU data as one string
 	imu_read_16_n(ACCEL_XOUT_H, imu_raw_data.reg, sizeof(imu_raw_data.reg));
@@ -245,7 +245,7 @@ IMU_Data imu_get_data(float* debug) {
 	// 32 bit values required because for some reason it fails otherwise
 	int32_t max_accel = UMAX_3(imu_raw_data.bit.accel_x, imu_raw_data.bit.accel_y, imu_raw_data.bit.accel_z);
 	int32_t max_gyro = UMAX_3(imu_raw_data.bit.gyro_x, imu_raw_data.bit.gyro_y, imu_raw_data.bit.gyro_z);
-	*debug = (float) max_gyro;
+	//*debug = (float) max_gyro;
 	
 	imu_user_bank(2);
 	
