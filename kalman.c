@@ -32,6 +32,8 @@ Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orien
 	
 	
 	// euler kinematic matrix
+	// transforms acceleration from accelerometer in board frame
+	// to acceleration in world frame.
 	
 	float pi_180 = 0.01745329;
 	
@@ -45,7 +47,7 @@ Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orien
 	// correct error in variables
 	float euler_mat[9] = {
 		cosy*cosz, sinx*siny*cosz-cosx*sinz, cosx*siny*cosz+sinx*sinz,
-		cosy*sinz, sinz*siny*sinz+cosx*cosz, cosx*siny*sinz-sinx*cosz,
+		cosy*sinz, sinx*siny*sinz+cosx*cosz, cosx*siny*sinz-sinx*cosz,
 		-siny, sinx*cosy, cosx*cosy
 	};
 	
@@ -153,7 +155,7 @@ Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orien
 //
 //uint32_t update_position_previous_time;
 
-void kalman_update_position(Position_State* state, Position_Data data, float* estimate_uncertainty, float* measurement_uncertainty) {
+void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* estimate_uncertainty, float* measurement_uncertainty, float* accelerometer_bias) {
 	static uint32_t update_position_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
@@ -164,7 +166,7 @@ void kalman_update_position(Position_State* state, Position_Data data, float* es
 	// convert previous time to float
 	float i_time = delta_time * TIMER_S_MULTIPLIER;
 	// get square value
-	float i_time_squared = i_time * i_time;
+	//float i_time_squared = i_time * i_time;
 	
 	
 	//----------CALCULATE KALMAN GAIN----------//
@@ -243,7 +245,6 @@ void kalman_update_position(Position_State* state, Position_Data data, float* es
 	mat_copy(new_state, 6, state->reg);
 	
 	
-	
 	//----------UPDATE ESTIMATE UNCERTAINTY----------
 	
 	
@@ -317,7 +318,50 @@ void kalman_update_position(Position_State* state, Position_Data data, float* es
 	mat_add(I6_KHPI6_KH_t, KRK_t, 36, estimate_uncertainty);
 	
 
-	
+	////----------CALCULATE ACCELEROMETER BIAS CORRECTIONS----------//
+	//
+	//
+	//// corrections to velocity calculated by the kalman filter
+	//float v_corrections[3] = { Ki[3], Ki[4], Ki[5] };
+	//
+	//// convert to accelerometer correction values in world space
+	//float a_corrections[3];
+	//float a_corrections_transformed[3];
+	//
+	//mat_scalar_product(v_corrections, 1/(i_time * 500), 3, a_corrections);
+	//
+	//// euler kinematic matrix
+	//// transforms acceleration from accelerometer in board frame
+	//// to acceleration in world frame.
+		//
+	//float pi_180 = 0.01745329;
+		//
+	//float sinx = sin(orientation.bit.orientation_x * pi_180);
+	//float siny = sin(orientation.bit.orientation_y * pi_180);
+	//float sinz = sin(orientation.bit.orientation_z * pi_180);
+	//float cosx = cos(orientation.bit.orientation_x * pi_180);
+	//float cosy = cos(orientation.bit.orientation_y * pi_180);
+	//float cosz = cos(orientation.bit.orientation_z * pi_180);
+		//
+	//// correct error in variables
+	//float euler_mat[9] = {
+		//cosy*cosz, sinx*siny*cosz-cosx*sinz, cosx*siny*cosz+sinx*sinz,
+		//cosy*sinz, sinx*siny*sinz+cosx*cosz, cosx*siny*sinz-sinx*cosz,
+		//-siny, sinx*cosy, cosx*cosy
+	//};
+	//
+	//// by taking the inverse, we get the equation that will transform
+	//// world space acceleration into local space acceleration
+	//
+	//float euler_mat_inv[9];
+	//
+	//mat_inverse_3x3(euler_mat, euler_mat_inv);
+	//
+	//// multiply a_corrections by inverse of euler mat and write back
+	//mat_multiply(euler_mat_inv, 3, 3, a_corrections, 3, 1, a_corrections_transformed);
+	//
+	//// add transformed corrections to bias
+	//mat_add(accelerometer_bias, a_corrections_transformed, 3, accelerometer_bias);
 }
 
 
@@ -329,17 +373,18 @@ void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float
 	
 	// x axis variance
 	// set covariance values to 0
-	writeback[0] = hAcc_2;
+	writeback[0] = hAcc_2 * 0.5;
 	writeback[1] = 0;
 	writeback[2] = 0;
 	writeback[3] = 0;
 	// y axis variance
-	writeback[4] = hAcc_2;
+	writeback[4] = hAcc_2 * 0.5;
 	writeback[5] = 0;
 	writeback[6] = 0;
 	writeback[7] = 0;
 	// z axis variance
-	writeback[8] = vAcc_2;
+	//writeback[8] = vAcc_2;
+	writeback[8] = 2000;
 }
 
 
@@ -475,7 +520,7 @@ void kalman_update_orientation(Orientation_State* state, Orientation_State data,
 	// convert previous time to float
 	float i_time = delta_time * TIMER_S_MULTIPLIER;
 	// get square value
-	float i_time_squared = i_time * i_time;
+	//float i_time_squared = i_time * i_time;
 	
 	
 	

@@ -101,7 +101,7 @@ typedef union {
 Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation, float* estimate_uncertainty);
 
 // tested
-void kalman_update_position(Position_State* state, Position_Data data, float* estimate_uncertainty, float* measurement_uncertainty);
+void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* estimate_uncertainty, float* measurement_uncertainty, float* accelerometer_bias);
 
 // tested
 void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float vAcc);

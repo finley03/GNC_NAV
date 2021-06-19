@@ -23,6 +23,12 @@ void mat_inverse_2x2(float* mat, float* writeback);
 
 void mat_inverse_3x3(float* mat, float* writeback);
 
+void mat_LU_decompose(float* mat, uint16_t n, float* L, float* U);
+
+void mat_LU_solve_n(float* L, float* U, float* vector, uint16_t n, float* writeback);
+
+void mat_LU_inverse_n(float* L, float* U, float* workingVector, uint16_t n, float* writeback);
+
 void mat_crossp(float* mat1, float* mat2, float* writeback);
 
 void mat_3_normalize(float* mat, float* writeback);

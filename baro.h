@@ -4,6 +4,9 @@
 #include "samd21e18a.h"
 #include "time.h"
 #include "spi.h"
+#include "util.h"
+
+#include <math.h>
 
 // resolution conversion time:
 // 256: 0.6ms
@@ -59,5 +62,7 @@ uint8_t baro_check();
 
 //float baro_get_data();
 float baro_get_pressure(float* temperature);
+
+float get_pressure_altitude(float* pressure, float* temperature);
 
 #endif

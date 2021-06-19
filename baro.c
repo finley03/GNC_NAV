@@ -121,6 +121,12 @@ float baro_get_pressure(float* temperature) {
 	// get raw digital temperature value
 	uint32_t D2 = baro_get_data(BARO_D2_1024, 2500);
 	
+	 //get raw digital pressure value
+	 //9.5ms used as delay value
+	//uint32_t D1 = baro_get_data(BARO_D1_4096, 9500);
+	 //get raw digital temperature value
+	//uint32_t D2 = baro_get_data(BARO_D2_4096, 9500);
+	
 	
 	// get difference between actual and reference temperature
 	int32_t dT = D2 - ((int32_t) baro_prom.tref * 256);
@@ -142,4 +148,11 @@ float baro_get_pressure(float* temperature) {
 	
 	*temperature = ((float) TEMP) * 0.01;
 	return ((float) P) * 0.01;
+}
+
+
+float get_pressure_altitude(float* pressure, float* temperature) {
+	*pressure = baro_get_pressure(temperature);
+	float altitude = 44307.69396 * (1 - pow((*pressure / 1013.25), 0.190284));
+	return altitude;
 }

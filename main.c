@@ -76,16 +76,52 @@ int main(void) {
 	// accelerometer magnetometer orientation estimate
 	Orientation_State accel_mag_orientation;
 	
+	float accelerometer_bias[3] = { 0, 0, 0 };
+	
 	
 	while(1) {
 		delay_ms(2);
 		
+		
+		// data collection and predict moved to top to give kalman filter more accurate data
+		IMU_Data imu_data = imu_get_data();
+				
+				
+		MAG_Data mag_data_uncalibrated = mag_get_data();
+		//MAG_Data mag_data;
+		mag_data.mag_x = (mag_data_uncalibrated.mag_x - mag_cal_data.bias_x) * mag_cal_data.scale_x;
+		mag_data.mag_y = (mag_data_uncalibrated.mag_y - mag_cal_data.bias_y) * mag_cal_data.scale_y;
+		mag_data.mag_z = (mag_data_uncalibrated.mag_z - mag_cal_data.bias_z) * mag_cal_data.scale_z;
+				
+		// create accelerometer data type
+		accel_data.bit.accel_x = imu_data.accel_x + accelerometer_bias[0];
+		accel_data.bit.accel_y = imu_data.accel_y + accelerometer_bias[1];
+		accel_data.bit.accel_z = imu_data.accel_z + accelerometer_bias[2];
+				
+		Gyro_Data gyro_data;
+		gyro_data.bit.rotation_x = imu_data.gyro_x;
+		gyro_data.bit.rotation_y = imu_data.gyro_y;
+		gyro_data.bit.rotation_z = imu_data.gyro_z;
+				
+				
+		Accel_Data transformed_accel;
+				
+		if (nav_data_packet.bit.h_acc < 50) {
+			// run kalman predict step
+			transformed_accel = kalman_predict_position(&position_state, accel_data, orientation_state, position_estimate_uncertainty);
+			kalman_predict_orientation(&orientation_state, gyro_data, orientation_estimate_uncertainty);
+		}
+		
+		
+		
 		if (gps_dma_check_complete()) {
 			float latitude = ubx_nav_pvt.bit.lat * 1E-7;
 			float longitude = ubx_nav_pvt.bit.lon * 1E-7;
-			float height = ubx_nav_pvt.bit.height * 1E-3;
+			//float height = ubx_nav_pvt.bit.height * 1E-3;
 			float hAcc = ubx_nav_pvt.bit.hAcc * 1E-3;
 			float vAcc = ubx_nav_pvt.bit.vAcc * 1E-3;
+			
+			float height = get_pressure_altitude(&nav_data_packet.bit.pressure, &nav_data_packet.bit.baro_temperature);
 			
 			
 			nav_data_packet.bit.latitude = latitude;
@@ -116,7 +152,7 @@ int main(void) {
 			position_data.bit.position_z = -height;
 			
 			
-			kalman_update_position(&position_state, position_data, position_estimate_uncertainty, position_measurement_uncertainty);
+			kalman_update_position(&position_state, position_data, orientation_state, position_estimate_uncertainty, position_measurement_uncertainty, accelerometer_bias);
 			
 			
 			
@@ -129,39 +165,16 @@ int main(void) {
 			kalman_update_orientation(&orientation_state, accel_mag_orientation, orientation_estimate_uncertainty, orientation_measurement_uncertainty);
 			
 			
-			// get barometer pressure readings
-			nav_data_packet.bit.pressure = baro_get_pressure(&nav_data_packet.bit.baro_temperature);
+			//// get barometer pressure readings
+			//nav_data_packet.bit.pressure = baro_get_pressure(&nav_data_packet.bit.baro_temperature);
 			
 		}
 		
-		
-		IMU_Data imu_data = imu_get_data();
-		
-		
-		MAG_Data mag_data_uncalibrated = mag_get_data();
-		//MAG_Data mag_data;
-		mag_data.mag_x = (mag_data_uncalibrated.mag_x - mag_cal_data.bias_x) * mag_cal_data.scale_x;
-		mag_data.mag_y = (mag_data_uncalibrated.mag_y - mag_cal_data.bias_y) * mag_cal_data.scale_y;
-		mag_data.mag_z = (mag_data_uncalibrated.mag_z - mag_cal_data.bias_z) * mag_cal_data.scale_z;
-		
-		// create accelerometer data type
-		accel_data.bit.accel_x = imu_data.accel_x;
-		accel_data.bit.accel_y = imu_data.accel_y;
-		accel_data.bit.accel_z = imu_data.accel_z;
-		
-		Gyro_Data gyro_data;
-		gyro_data.bit.rotation_x = imu_data.gyro_x;
-		gyro_data.bit.rotation_y = imu_data.gyro_y;
-		gyro_data.bit.rotation_z = imu_data.gyro_z;
+
 		
 		
-		Accel_Data transformed_accel;
+		// fill in data in data packet
 		
-		if (nav_data_packet.bit.h_acc < 50) {
-			// run kalman predict step
-			transformed_accel = kalman_predict_position(&position_state, accel_data, orientation_state, position_estimate_uncertainty);
-			kalman_predict_orientation(&orientation_state, gyro_data, orientation_estimate_uncertainty);
-		}
 		
 		nav_data_packet.bit.position_x = position_state.bit.position_x;
 		nav_data_packet.bit.position_y = position_state.bit.position_y;
