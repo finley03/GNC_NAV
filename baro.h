@@ -1,8 +1,7 @@
 #ifndef BARO_H
 #define BARO_H
 
-#include "samd21e18a.h"
-#include "time.h"
+#include "util.h"
 #include "spi.h"
 #include "util.h"
 

@@ -1,12 +1,9 @@
 #ifndef IMU_H
 #define IMU_H
 
-#include "samd21e18a.h"
-#include "time.h"
+#include "util.h"
 #include "spi.h"
 #include "util.h"
-
-#include <math.h>
 
 #define IMU_WRITE_MASK 0x7f
 #define IMU_READ_MASK 0x80

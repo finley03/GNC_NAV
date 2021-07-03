@@ -1,8 +1,6 @@
-#include "samd21e18a.h"
-
 #include <math.h>
 
-#include "time.h"
+#include "util.h"
 #include "util.h"
 #include "spi.h"
 #include "uart.h"

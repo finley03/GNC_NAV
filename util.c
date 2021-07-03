@@ -1,6 +1,9 @@
 #include "util.h"
 
 
+#include "mat.h"
+
+
 void LED_print_8(uint8_t data) {
 	for (uint16_t i = 0; i < 8; ++i) {
 		uint8_t bit = data & 0x80;
@@ -52,4 +55,14 @@ uint32_t gen_crc32(uint32_t data_addr, uint32_t data_size) {
 	*((volatile unsigned int*) 0x41007058) |= 0x20000UL;
 	
 	return out;
+}
+
+
+void correct_value(float* value, float* A, float* b, float* writeback) {
+	float centered[3];
+	centered[0] = value[0] - b[0];
+	centered[1] = value[1] - b[1];
+	centered[2] = value[2] - b[2];
+	
+	mat_multiply(A, 3, 3, centered, 3, 1, writeback);
 }

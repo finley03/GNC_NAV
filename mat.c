@@ -4,6 +4,13 @@
 #include <math.h>
 
 
+#define ABS(a) ((a < 0) ? -a : a)
+#define MAX_2(a, b) ((a > b) ? a : b)
+#define MAX_3(a, b, c) (MAX_2(MAX_2(a, b), c))
+#define UMAX_2(a, b) MAX_2(ABS(a), ABS(b))
+#define UMAX_3(a, b, c) MAX_3(ABS(a), ABS(b), ABS(c))
+
+
 void mat_identity(uint16_t n, float* writeback) {
 	for (uint32_t i = 0; i < n * n; ++i) {
 		writeback[i] = 0;
@@ -15,10 +22,11 @@ void mat_identity(uint16_t n, float* writeback) {
 }
 
 
+
 // matrix multiply
 // requires row major input
 // gives row major output
-// returns 0 for success, other values for failiures
+// returns 0 for success, other values for failures
 int mat_multiply(float* matA, uint16_t Am, uint16_t An, float* matB, uint16_t Bm, uint16_t Bn, float* writeback) {
 	// check matrices can be multiplied
 	if (An != Bm) return -1;
@@ -33,10 +41,10 @@ int mat_multiply(float* matA, uint16_t Am, uint16_t An, float* matB, uint16_t Bm
 				float a = matA[i + (An * m)];
 				float b = matB[(i * Bn) + n];
 
-				// skip optimisations
+				// skip optimizations
 				if (
-					// zero
-					(a == 0 || b == 0)
+				// zero
+				(a == 0 || b == 0)
 				) {
 					continue;
 				}
@@ -45,7 +53,7 @@ int mat_multiply(float* matA, uint16_t Am, uint16_t An, float* matB, uint16_t Bm
 				sum += a * b;
 			}
 
-			// set value in writebackarray
+			// set value in writeback array
 			writeback[n + (m * Bn)] = sum;
 		}
 	}
@@ -118,6 +126,9 @@ float mat_det_3x3(float* mat) {
 }
 
 
+
+
+
 void mat_inverse_2x2(float* mat, float* writeback) {
 	float det = mat_det_2x2(mat);
 	float invdet = 1 / det;
@@ -180,6 +191,8 @@ void mat_LU_decompose(float* mat, uint16_t n, float* L, float* U) {
 			// calculate multiplier for row
 			// i increments columns, j increments rows
 			float multiplier = U[i + j * n] / U[i * n + i];
+
+			//			printf("%f\n", U[i * n + i]);
 
 			// set multiplier in L matrix
 			L[i + j * n] = multiplier;
@@ -257,10 +270,116 @@ void mat_crossp(float* mat1, float* mat2, float* writeback) {
 }
 
 
+void mat_2_normalize(float* mat, float* writeback) {
+	float scalar = 1 / sqrt(mat[0] * mat[0] + mat[1] * mat[1]);
+
+	writeback[0] = mat[0] * scalar;
+	writeback[1] = mat[1] * scalar;
+}
+
 void mat_3_normalize(float* mat, float* writeback) {
 	float scalar = 1 / sqrt(mat[0] * mat[0] + mat[1] * mat[1] + mat[2] * mat[2]);
 	
 	writeback[0] = mat[0] * scalar;
 	writeback[1] = mat[1] * scalar;
 	writeback[2] = mat[2] * scalar;
+}
+
+
+// runs newton's method on given polynomial
+// must have degree of at least 1
+// in format A + Bx + Cx^2 ...
+float poly_newton(float* coeff, uint16_t degree) {
+	float last = -1;
+	float a = 1;
+	// iteratively find a root
+	while (ABS((last - a)) > 1E-5) {
+		// assign last
+		last = a;
+		// find new value
+		//
+		// evaluate polynomial
+		float fx = 0;
+		fx += coeff[0];
+		float apow = 1;
+		for (uint16_t i = 1; i <= degree; ++i) {
+			apow *= a;
+			fx += coeff[i] * apow;
+		}
+
+		// evaluate derivative
+		float fxdx = 0;
+		fxdx += coeff[1];
+		apow = 1;
+		for (uint16_t i = 2; i <= degree; ++i) {
+			apow *= a;
+			fxdx += coeff[i] * i * apow;
+		}
+
+		a = a - (fx / fxdx);
+	}
+
+	return a;
+	
+}
+
+
+void mat_2_eigenvalues(float* mat, float* values) {
+	float a = 1;
+	float b = -(mat[0] + mat[3]);
+	float c = mat[0] * mat[3] - mat[1] * mat[2];
+	float discriminant = sqrt(b * b - 4 * a * c);
+	values[0] = (-b + discriminant) / (2 * a);
+	values[1] = (-b - discriminant) / (2 * a);
+}
+
+
+void mat_3_eigenvalues(float* mat, float* values) {
+	// construct third degree polynomial
+	// Ax^3 + Bx^2 + Cx + D
+	// det(A - lambda I)
+	float A = -1;
+	float B = mat[0] + mat[4] + mat[8];
+	float C = -(mat[0] * mat[4] + mat[0] * mat[8] + mat[4] * mat[8]) +
+	(mat[1] * mat[3] + mat[2] * mat[6] + mat[5] * mat[7]);
+	float D = mat_det_3x3(mat);
+
+	// construct vector to get root
+	float coeff3[4] = {D, C, B, A};
+	values[0] = poly_newton(coeff3, 3);
+
+	// divide polynomial to get quadratic
+	// A is unchanged
+	B = -values[0] + B;
+	C = B * values[0] + C;
+	// ignore D
+	
+	// solve quadratic for final two roots
+	float discriminant = sqrt(B * B - 4 * A * C);
+	values[1] = (-B + discriminant) / (2 * A);
+	values[2] = (-B - discriminant) / (2 * A);
+}
+
+
+void mat_2_eigenvector(float* mat, float lambda, float* vector) {
+	vector[0] = 1;
+	vector[1] = -(mat[0] - lambda) / mat[1];
+	mat_2_normalize(vector, vector);
+}
+
+
+void mat_3_eigenvector(float* mat, float lambda, float* vector) {
+	// there are infinitely many solutions, so one value must be initialized
+	vector[0] = 1;
+	
+	// find value of bv2 + cv3 in (a - lambda)v1 + bv2 + cv3 = 0
+	float bv2cv3 = lambda - mat[0];
+	// find value of (e - lambda)v2 + fv3 in dv1 + (e - lambda)v2 + cv3 = 0
+	float elv2fv3 = -mat[3];
+
+	// subtract elv2fv3 from bv2cv3 and calculate v2
+	vector[1] = (bv2cv3 - (mat[2] / mat[5]) * elv2fv3) / (mat[1] - (mat[4] - lambda) * (mat[2] / mat[5]));
+	vector[2] = -(mat[1] * vector[1] + mat[0] - lambda) / mat[2];
+
+	mat_3_normalize(vector, vector);
 }

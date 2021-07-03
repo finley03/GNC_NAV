@@ -1,8 +1,7 @@
 #ifndef DMA_H
 #define DMA_H
 
-#include "samd21e18a.h"
-#include "time.h"
+#include "util.h"
 #include "gps.h"
 
 

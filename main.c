@@ -299,8 +299,9 @@ void txc_data() {
 					control_uart_send(nav_data_packet.reg[i]);
 				}
 				break;
-			//case 0x82: // magnetometer calibrate command
-				//MAG_Cal_Data mag_cal_data = mag_cal();
+			case 0x82: // magnetometer calibrate command
+			
+				break;
 		}
 		
 	}

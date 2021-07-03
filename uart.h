@@ -1,8 +1,7 @@
 #ifndef UART_H
 #define UART_H
 
-#include "samd21e18a.h"
-#include "time.h"
+#include "util.h"
 
 // uart to main processor;
 void control_uart_init();

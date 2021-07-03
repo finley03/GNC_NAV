@@ -1,8 +1,7 @@
 #ifndef SPI_H
 #define SPI_H
 
-#include "samd21e18a.h"
-#include "time.h"
+#include "util.h"
 
 #define SPI_IMU_SS PORT_PA25
 #define SPI_BARO_SS PORT_PA27
