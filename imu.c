@@ -1,4 +1,11 @@
 #include "imu.h"
+#include "util.h"
+
+
+// create regression function for ellipsoid
+#define NR_MAG_POINTS 100
+#define DATA_SIZE NR_MAG_POINTS
+#include "ellipsoidfit.h"
 
 
 // changes user bank accessible by spi
@@ -410,61 +417,81 @@ MAG_Data mag_get_data() {
 	
 	
 	// transform magnetometer readings to north east down
-	mag_data.mag_x = (float) mag_raw_data.bit.mag_x * MAG_MULTIPLIER;
-	mag_data.mag_y = -((float) mag_raw_data.bit.mag_y * MAG_MULTIPLIER);
-	mag_data.mag_z = -((float) mag_raw_data.bit.mag_z * MAG_MULTIPLIER);
+	mag_data.bit.mag_x = (float) mag_raw_data.bit.mag_x * MAG_MULTIPLIER;
+	mag_data.bit.mag_y = -((float) mag_raw_data.bit.mag_y * MAG_MULTIPLIER);
+	mag_data.bit.mag_z = -((float) mag_raw_data.bit.mag_z * MAG_MULTIPLIER);
 	
 	
 	return mag_data;
 }
 
 
-MAG_Cal_Data mag_cal() {
-	// create return type
-	MAG_Cal_Data mag_cal_data;
+void mag_cal(float* A, float* b) {
+	// array for magnetometer data
+	float data[NR_MAG_POINTS * 3];
 	
-	// create initial min/max registers
-	float max[3] = {-1000, -1000, -1000};
-	float min[3] = {1000, 1000, 1000};
-	
-	// collect data and find maximum and minimum values
-	for (uint32_t i = 0; i < 1500; ++i) {
+	for (uint8_t i = 0; i < NR_MAG_POINTS; ++i) {
+		// get magnetometer data
 		MAG_Data mag_data = mag_get_data();
 		
-		max[0] = (mag_data.mag_x > max[0]) ? mag_data.mag_x : max[0];
-		max[1] = (mag_data.mag_y > max[1]) ? mag_data.mag_y : max[1];
-		max[2] = (mag_data.mag_z > max[2]) ? mag_data.mag_z : max[2];
+		// copy data to "data" register
+		mat_copy(mag_data.reg, 3, data + i * 3);
 		
-		min[0] = (mag_data.mag_x < min[0]) ? mag_data.mag_x : min[0];
-		min[1] = (mag_data.mag_y < min[1]) ? mag_data.mag_y : min[1];
-		min[2] = (mag_data.mag_z < min[2]) ? mag_data.mag_z : min[2];
-		
-		// wait 10ms for new data
-		delay_ms(10);
+		// wait 100 ms so 10s for entire calibration
+		delay_ms(100);
 	}
 	
-	
-	// hard iron correction
-	mag_cal_data.bias_x = (max[0] + min[0]) / 2;
-	mag_cal_data.bias_y = (max[1] + min[1]) / 2;
-	mag_cal_data.bias_z = (max[2] + min[2]) / 2;
-	
-	
-	// soft iron correction
-	
-	// create array of scales
-	float scale[3];
-	
-	scale[0] = (max[0] - min[0]) / 2;
-	scale[1] = (max[1] - min[1]) / 2;
-	scale[2] = (max[2] - min[2]) / 2;
-	
-	float average_scale = (scale[0] + scale[1] + scale[2]) / 3;
-	
-	mag_cal_data.scale_x = average_scale / scale[0];
-	mag_cal_data.scale_y = average_scale / scale[1];
-	mag_cal_data.scale_z = average_scale / scale[2];
-	
-	
-	return mag_cal_data;
+	// regress ellipsoid to data and get correction matrices
+	ellipsoidcorrection_100(data, A, b);
 }
+
+
+//MAG_Cal_Data mag_cal() {
+	//// create return type
+	//MAG_Cal_Data mag_cal_data;
+	//
+	//// create initial min/max registers
+	//float max[3] = {-1000, -1000, -1000};
+	//float min[3] = {1000, 1000, 1000};
+	//
+	//// collect data and find maximum and minimum values
+	//for (uint32_t i = 0; i < 1500; ++i) {
+		//MAG_Data mag_data = mag_get_data();
+		//
+		//max[0] = (mag_data.mag_x > max[0]) ? mag_data.mag_x : max[0];
+		//max[1] = (mag_data.mag_y > max[1]) ? mag_data.mag_y : max[1];
+		//max[2] = (mag_data.mag_z > max[2]) ? mag_data.mag_z : max[2];
+		//
+		//min[0] = (mag_data.mag_x < min[0]) ? mag_data.mag_x : min[0];
+		//min[1] = (mag_data.mag_y < min[1]) ? mag_data.mag_y : min[1];
+		//min[2] = (mag_data.mag_z < min[2]) ? mag_data.mag_z : min[2];
+		//
+		//// wait 10ms for new data
+		//delay_ms(10);
+	//}
+	//
+	//
+	//// hard iron correction
+	//mag_cal_data.bias_x = (max[0] + min[0]) / 2;
+	//mag_cal_data.bias_y = (max[1] + min[1]) / 2;
+	//mag_cal_data.bias_z = (max[2] + min[2]) / 2;
+	//
+	//
+	//// soft iron correction
+	//
+	//// create array of scales
+	//float scale[3];
+	//
+	//scale[0] = (max[0] - min[0]) / 2;
+	//scale[1] = (max[1] - min[1]) / 2;
+	//scale[2] = (max[2] - min[2]) / 2;
+	//
+	//float average_scale = (scale[0] + scale[1] + scale[2]) / 3;
+	//
+	//mag_cal_data.scale_x = average_scale / scale[0];
+	//mag_cal_data.scale_y = average_scale / scale[1];
+	//mag_cal_data.scale_z = average_scale / scale[2];
+	//
+	//
+	//return mag_cal_data;
+//}

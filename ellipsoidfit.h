@@ -167,4 +167,4 @@ void FN(ellipsoidcorrection_)(float* data, float* A, float* b) {
 #undef CCAT2
 #undef CCAT
 #undef FN
-#undef ABS
+//#undef ABS

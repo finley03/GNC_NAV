@@ -6,8 +6,8 @@ void txc_data();
 void system_check();
 
 
-NAV_Selftest_Packet nav_selftest_packet;
-NAV_Data_Packet nav_data_packet;
+static NAV_Selftest_Packet nav_selftest_packet;
+static NAV_Data_Packet nav_data_packet;
 
 
 int main(void) {
@@ -15,7 +15,10 @@ int main(void) {
 	
 	nav_data_packet.bit.device_id = DEVICE_ID;
 	
-	MAG_Cal_Data mag_cal_data = mag_cal();
+	static float A[9];
+	static float b[3];
+	mag_cal(A, b);
+	//MAG_Cal_Data mag_cal_data = mag_cal();
 	
 	gps_init_dma();
 	
@@ -23,12 +26,12 @@ int main(void) {
 	start_timer();
 	
 	
-	MAG_Data mag_data;
-	Accel_Data accel_data;
+	static MAG_Data mag_data;
+	static Accel_Data accel_data;
 	
 	
 	// create position state variable
-	Position_State position_state;
+	static Position_State position_state;
 	position_state.bit.position_x = 0;
 	position_state.bit.position_y = 0;
 	position_state.bit.position_z = 0;
@@ -38,7 +41,7 @@ int main(void) {
 	
 	
 	// set initial position estimate uncertainty;
-	float position_estimate_uncertainty[36] = {
+	static float position_estimate_uncertainty[36] = {
 		1000, 0, 0, 0, 0, 0,
 		0, 1000, 0, 0, 0, 0,
 		0, 0, 1000, 0, 0, 0,
@@ -48,33 +51,33 @@ int main(void) {
 	};
 	
 	// create position measurement uncertainty variable
-	float position_measurement_uncertainty[9];
+	static float position_measurement_uncertainty[9];
 	
 	
 	
 	// create orientation state variable
-	Orientation_State orientation_state;
+	static Orientation_State orientation_state;
 	orientation_state.bit.orientation_x = 0;
 	orientation_state.bit.orientation_y = 0;
 	orientation_state.bit.orientation_z = 0;
 	
 	
 	// set initial orientation estimate uncertainty;
-	float orientation_estimate_uncertainty[9] = {
+	static float orientation_estimate_uncertainty[9] = {
 		8000, 0, 0,
 		0, 8000, 0,
 		0, 0, 8000
 	};
 	
 	// set orientation measurement uncertainty
-	float orientation_measurement_uncertainty[9] = {
+	static float orientation_measurement_uncertainty[9] = {
 		8000, 0, 0,
 		0, 8000, 0,
 		0, 0, 8000
 	};
 	
 	// accelerometer magnetometer orientation estimate
-	Orientation_State accel_mag_orientation;
+	static Orientation_State accel_mag_orientation;
 	
 	float accelerometer_bias[3] = { 0, 0, 0 };
 	
@@ -89,9 +92,11 @@ int main(void) {
 				
 		MAG_Data mag_data_uncalibrated = mag_get_data();
 		//MAG_Data mag_data;
-		mag_data.mag_x = (mag_data_uncalibrated.mag_x - mag_cal_data.bias_x) * mag_cal_data.scale_x;
-		mag_data.mag_y = (mag_data_uncalibrated.mag_y - mag_cal_data.bias_y) * mag_cal_data.scale_y;
-		mag_data.mag_z = (mag_data_uncalibrated.mag_z - mag_cal_data.bias_z) * mag_cal_data.scale_z;
+		//mag_data.mag_x = (mag_data_uncalibrated.mag_x - mag_cal_data.bias_x) * mag_cal_data.scale_x;
+		//mag_data.mag_y = (mag_data_uncalibrated.mag_y - mag_cal_data.bias_y) * mag_cal_data.scale_y;
+		//mag_data.mag_z = (mag_data_uncalibrated.mag_z - mag_cal_data.bias_z) * mag_cal_data.scale_z;
+		// shift values based on calculated correction
+		correct_value(mag_data_uncalibrated.reg, A, b, mag_data.reg);
 				
 		// create accelerometer data type
 		accel_data.bit.accel_x = imu_data.accel_x + accelerometer_bias[0];
@@ -204,9 +209,9 @@ int main(void) {
 		nav_data_packet.bit.accelraw_y = imu_data.accel_y;
 		nav_data_packet.bit.accelraw_z = imu_data.accel_z;
 		
-		nav_data_packet.bit.mag_x = mag_data.mag_x;
-		nav_data_packet.bit.mag_y = mag_data.mag_y;
-		nav_data_packet.bit.mag_z = mag_data.mag_z;
+		nav_data_packet.bit.mag_x = mag_data.bit.mag_x;
+		nav_data_packet.bit.mag_y = mag_data.bit.mag_y;
+		nav_data_packet.bit.mag_z = mag_data.bit.mag_z;
 		
 		nav_data_packet.bit.imu_temperature = imu_data.temp;
 		

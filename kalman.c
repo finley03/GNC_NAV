@@ -704,9 +704,9 @@ Orientation_State kalman_orientation_generate_state(MAG_Data mag_data, Accel_Dat
 	
 	// populate mag data array
 	float mag[3];
-	mag[0] = mag_data.mag_x;
-	mag[1] = mag_data.mag_y;
-	mag[2] = mag_data.mag_z;
+	mag[0] = mag_data.bit.mag_x;
+	mag[1] = mag_data.bit.mag_y;
+	mag[2] = mag_data.bit.mag_z;
 	
 	// normalize mag array and write back to mag
 	mat_3_normalize(mag, mag);

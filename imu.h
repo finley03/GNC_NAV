@@ -3,7 +3,7 @@
 
 #include "util.h"
 #include "spi.h"
-#include "util.h"
+#include "mat.h"
 
 #define IMU_WRITE_MASK 0x7f
 #define IMU_READ_MASK 0x80
@@ -165,17 +165,24 @@ typedef struct {
 	float mag_x;
 	float mag_y;
 	float mag_z;
+} MAG_Data_Type;
+
+
+typedef union {
+	MAG_Data_Type bit;
+	
+	float reg[sizeof(MAG_Data_Type)];
 } MAG_Data;
 
 
-typedef struct {
-	float bias_x;
-	float bias_y;
-	float bias_z;
-	float scale_x;
-	float scale_y;
-	float scale_z;
-} MAG_Cal_Data;
+//typedef struct {
+	//float bias_x;
+	//float bias_y;
+	//float bias_z;
+	//float scale_x;
+	//float scale_y;
+	//float scale_z;
+//} MAG_Cal_Data;
 
 
 // IMU must be initialised to prevent
@@ -200,7 +207,8 @@ MAG_Data mag_get_data();
 // get magnetometer calibration data
 // takes large amount of time to gather data
 // requires user to move board
-MAG_Cal_Data mag_cal();
+//MAG_Cal_Data mag_cal();
+void mag_cal(float* A, float* b);
 
 
 uint8_t mag_check();
