@@ -67,7 +67,7 @@ typedef union {
 	uint8_t reg[100];
 } UBX_NAV_PVT_Type;
 
-UBX_NAV_PVT_Type ubx_nav_pvt;
+volatile static UBX_NAV_PVT_Type ubx_nav_pvt;
 
 
 void configure_gps();

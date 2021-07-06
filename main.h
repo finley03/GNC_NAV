@@ -1,6 +1,3 @@
-#include <math.h>
-
-#include "util.h"
 #include "util.h"
 #include "spi.h"
 #include "uart.h"

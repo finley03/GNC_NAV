@@ -5,7 +5,7 @@
 #include "gps.h"
 
 
-#define DMA_CHANNELS 3
+#define DMA_CHANNELS 1
 
 
 typedef struct __attribute__((aligned(16))) {
