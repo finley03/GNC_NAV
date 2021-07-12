@@ -8,8 +8,8 @@
 
 // assume acceleration standard deviation of 3m/s
 #define KALMAN_ACCEL_VARIANCE 9
-// assume angle standard deviation of 90 degrees/s
-#define KALMAN_ANGULARVELOCITY_VARIANCE 8100
+// assume angle standard deviation of 10 degrees/s
+#define KALMAN_ANGULARVELOCITY_VARIANCE 100
 
 
 
@@ -101,7 +101,7 @@ typedef union {
 Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation, float* estimate_uncertainty);
 
 // tested
-void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* estimate_uncertainty, float* measurement_uncertainty, float* accelerometer_bias);
+void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* estimate_uncertainty, float* measurement_uncertainty);
 
 // tested
 void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float vAcc);

@@ -6,8 +6,8 @@ void txc_data();
 void system_check();
 
 
-static NAV_Selftest_Packet nav_selftest_packet;
-static NAV_Data_Packet nav_data_packet;
+NAV_Selftest_Packet nav_selftest_packet;
+NAV_Data_Packet nav_data_packet;
 
 
 int main(void) {
@@ -15,9 +15,11 @@ int main(void) {
 	
 	nav_data_packet.bit.device_id = DEVICE_ID;
 	
-	static float A[9];
-	static float b[3];
-	mag_cal(A, b);
+	//static float A[9];
+	//static float b[3];
+	//mag_cal(A, b);
+	//mag_cal();
+	mag_cal();
 	//MAG_Cal_Data mag_cal_data = mag_cal();
 	
 	gps_init_dma();
@@ -69,17 +71,17 @@ int main(void) {
 		0, 0, 8000
 	};
 	
-	// set orientation measurement uncertainty
+	// set orientation measurement uncertainty to 20 degrees
 	static float orientation_measurement_uncertainty[9] = {
-		8000, 0, 0,
-		0, 8000, 0,
-		0, 0, 8000
+		400, 0, 0,
+		0, 400, 0,
+		0, 0, 400
 	};
 	
 	// accelerometer magnetometer orientation estimate
 	static Orientation_State accel_mag_orientation;
 	
-	float accelerometer_bias[3] = { 0, 0, 0 };
+	//float accelerometer_bias[3] = { 0, 0, 0 };
 	
 	
 	while(1) {
@@ -90,18 +92,18 @@ int main(void) {
 		IMU_Data imu_data = imu_get_data();
 				
 				
-		MAG_Data mag_data_uncalibrated = mag_get_data();
+		mag_data = mag_get_data();
 		//MAG_Data mag_data;
 		//mag_data.mag_x = (mag_data_uncalibrated.mag_x - mag_cal_data.bias_x) * mag_cal_data.scale_x;
 		//mag_data.mag_y = (mag_data_uncalibrated.mag_y - mag_cal_data.bias_y) * mag_cal_data.scale_y;
 		//mag_data.mag_z = (mag_data_uncalibrated.mag_z - mag_cal_data.bias_z) * mag_cal_data.scale_z;
 		// shift values based on calculated correction
-		correct_value(mag_data_uncalibrated.reg, A, b, mag_data.reg);
+		//correct_value(mag_data_uncalibrated.reg, A, b, mag_data.reg);
 				
 		// create accelerometer data type
-		accel_data.bit.accel_x = imu_data.accel_x + accelerometer_bias[0];
-		accel_data.bit.accel_y = imu_data.accel_y + accelerometer_bias[1];
-		accel_data.bit.accel_z = imu_data.accel_z + accelerometer_bias[2];
+		accel_data.bit.accel_x = imu_data.accel_x;
+		accel_data.bit.accel_y = imu_data.accel_y;
+		accel_data.bit.accel_z = imu_data.accel_z;
 				
 		Gyro_Data gyro_data;
 		gyro_data.bit.rotation_x = imu_data.gyro_x;
@@ -157,7 +159,7 @@ int main(void) {
 			position_data.bit.position_z = -height;
 			
 			
-			kalman_update_position(&position_state, position_data, orientation_state, position_estimate_uncertainty, position_measurement_uncertainty, accelerometer_bias);
+			kalman_update_position(&position_state, position_data, orientation_state, position_estimate_uncertainty, position_measurement_uncertainty);
 			
 			
 			
@@ -267,7 +269,7 @@ void init() {
 	
 	
 
-	delay_ms(100);
+	//delay_ms(100);
 	
 	
 	//if (system_check() != 0) {

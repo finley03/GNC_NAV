@@ -3,9 +3,16 @@
 
 
 // create regression function for ellipsoid
-#define NR_MAG_POINTS 100
-#define DATA_SIZE NR_MAG_POINTS
+#define NR_CAL_POINTS 100
+#define DATA_SIZE NR_CAL_POINTS
 #include "ellipsoidfit.h"
+
+
+// calibration data
+static float mag_A[9];
+static float mag_b[3];
+static float accel_b[3];
+static float gyro_b[3];
 
 
 // changes user bank accessible by spi
@@ -235,7 +242,7 @@ uint8_t mag_check() {
 }
 
 
-IMU_Data imu_get_data() {
+IMU_Data imu_get_data_raw() {
 	IMU_Raw_Data imu_raw_data;
 	// read all IMU data as one string
 	imu_read_16_n(ACCEL_XOUT_H, imu_raw_data.reg, sizeof(imu_raw_data.reg));
@@ -399,7 +406,7 @@ IMU_Data imu_get_data() {
 }
 
 
-MAG_Data mag_get_data() {
+MAG_Data mag_get_data_raw() {
 	MAG_Raw_Data mag_raw_data;
 	// read all mag registers as one string
 	imu_mag_read_n(MAG_HXL, mag_raw_data.reg, sizeof(mag_raw_data.reg));
@@ -426,13 +433,43 @@ MAG_Data mag_get_data() {
 }
 
 
-void mag_cal(float* A, float* b) {
-	// array for magnetometer data
-	float data[NR_MAG_POINTS * 3];
+IMU_Data imu_get_data() {
+	IMU_Data uncalibrated = imu_get_data_raw();
+	IMU_Data calibrated;
 	
-	for (uint8_t i = 0; i < NR_MAG_POINTS; ++i) {
+	calibrated.accel_x = uncalibrated.accel_x - accel_b[0];
+	calibrated.accel_y = uncalibrated.accel_y - accel_b[1];
+	calibrated.accel_z = uncalibrated.accel_z - accel_b[2];
+	calibrated.gyro_x = uncalibrated.gyro_x;
+	calibrated.gyro_y = uncalibrated.gyro_y;
+	calibrated.gyro_z = uncalibrated.gyro_z;
+	
+	return calibrated;
+}
+
+
+MAG_Data mag_get_data() {
+	MAG_Data uncalibrated = mag_get_data_raw();
+	MAG_Data calibrated;
+	
+	float centered[3];
+	centered[0] = uncalibrated.reg[0] - mag_b[0];
+	centered[1] = uncalibrated.reg[1] - mag_b[1];
+	centered[2] = uncalibrated.reg[2] - mag_b[2];
+	
+	mat_multiply(mag_A, 3, 3, centered, 3, 1, calibrated.reg);
+	
+	return calibrated;
+}
+
+
+void mag_cal() {
+	// array for magnetometer data
+	float data[NR_CAL_POINTS * 3];
+	
+	for (uint16_t i = 0; i < NR_CAL_POINTS; ++i) {
 		// get magnetometer data
-		MAG_Data mag_data = mag_get_data();
+		MAG_Data mag_data = mag_get_data_raw();
 		
 		// copy data to "data" register
 		mat_copy(mag_data.reg, 3, data + i * 3);
@@ -442,56 +479,28 @@ void mag_cal(float* A, float* b) {
 	}
 	
 	// regress ellipsoid to data and get correction matrices
-	ellipsoidcorrection_100(data, A, b);
+	ellipsoidcorrection_100(data, mag_A, mag_b);
 }
 
 
-//MAG_Cal_Data mag_cal() {
-	//// create return type
-	//MAG_Cal_Data mag_cal_data;
-	//
-	//// create initial min/max registers
-	//float max[3] = {-1000, -1000, -1000};
-	//float min[3] = {1000, 1000, 1000};
-	//
-	//// collect data and find maximum and minimum values
-	//for (uint32_t i = 0; i < 1500; ++i) {
-		//MAG_Data mag_data = mag_get_data();
-		//
-		//max[0] = (mag_data.mag_x > max[0]) ? mag_data.mag_x : max[0];
-		//max[1] = (mag_data.mag_y > max[1]) ? mag_data.mag_y : max[1];
-		//max[2] = (mag_data.mag_z > max[2]) ? mag_data.mag_z : max[2];
-		//
-		//min[0] = (mag_data.mag_x < min[0]) ? mag_data.mag_x : min[0];
-		//min[1] = (mag_data.mag_y < min[1]) ? mag_data.mag_y : min[1];
-		//min[2] = (mag_data.mag_z < min[2]) ? mag_data.mag_z : min[2];
-		//
-		//// wait 10ms for new data
-		//delay_ms(10);
-	//}
-	//
-	//
-	//// hard iron correction
-	//mag_cal_data.bias_x = (max[0] + min[0]) / 2;
-	//mag_cal_data.bias_y = (max[1] + min[1]) / 2;
-	//mag_cal_data.bias_z = (max[2] + min[2]) / 2;
-	//
-	//
-	//// soft iron correction
-	//
-	//// create array of scales
-	//float scale[3];
-	//
-	//scale[0] = (max[0] - min[0]) / 2;
-	//scale[1] = (max[1] - min[1]) / 2;
-	//scale[2] = (max[2] - min[2]) / 2;
-	//
-	//float average_scale = (scale[0] + scale[1] + scale[2]) / 3;
-	//
-	//mag_cal_data.scale_x = average_scale / scale[0];
-	//mag_cal_data.scale_y = average_scale / scale[1];
-	//mag_cal_data.scale_z = average_scale / scale[2];
-	//
-	//
-	//return mag_cal_data;
-//}
+void accel_mag_cal() {
+	// arrays for data
+	float mag_array[NR_CAL_POINTS * 3];
+	float accel_array[NR_CAL_POINTS * 3];
+	
+	for (uint16_t i = 0; i < NR_CAL_POINTS; ++i) {
+		// get data
+		MAG_Data mag_data = mag_get_data_raw();
+		IMU_Data imu_data = imu_get_data_raw();
+		float accel_data[3] = { imu_data.accel_x, imu_data.accel_y, imu_data.accel_z };
+		
+		mat_copy(mag_data.reg, 3, mag_array + i * 3);
+		mat_copy(accel_data, 3, accel_array + i * 3);
+		
+		delay_ms(150);
+	}
+	
+	float dummyvector[9];
+	ellipsoidcorrection_100(mag_array, mag_A, mag_b);
+	ellipsoidcorrection_100(accel_array, dummyvector, accel_b);
+}

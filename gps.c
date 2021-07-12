@@ -209,7 +209,7 @@ void configure_gps() {
 	gps_tx_msg(UBX_CFG_PRT_setbaud, sizeof(UBX_CFG_PRT_setbaud));
 	
 	
-	delay_ms(100);
+	delay_ms(50);
 	
 	
 	// update baud rate
@@ -229,7 +229,7 @@ void configure_gps() {
 	while(SERCOM1->USART.SYNCBUSY.bit.ENABLE);
 	
 	
-	delay_ms(100);
+	//delay_ms(100);
 	
 	
 	

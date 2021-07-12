@@ -171,7 +171,7 @@ typedef struct {
 typedef union {
 	MAG_Data_Type bit;
 	
-	float reg[sizeof(MAG_Data_Type)];
+	float reg[sizeof(MAG_Data_Type) / sizeof(float)];
 } MAG_Data;
 
 
@@ -208,7 +208,9 @@ MAG_Data mag_get_data();
 // takes large amount of time to gather data
 // requires user to move board
 //MAG_Cal_Data mag_cal();
-void mag_cal(float* A, float* b);
+void mag_cal();
+
+void accel_mag_cal();
 
 
 uint8_t mag_check();

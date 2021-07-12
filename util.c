@@ -58,11 +58,11 @@ uint32_t gen_crc32(uint32_t data_addr, uint32_t data_size) {
 }
 
 
-void correct_value(float* value, float* A, float* b, float* writeback) {
-	float centered[3];
-	centered[0] = value[0] - b[0];
-	centered[1] = value[1] - b[1];
-	centered[2] = value[2] - b[2];
-	
-	mat_multiply(A, 3, 3, centered, 3, 1, writeback);
-}
+//void correct_value(float* value, float* A, float* b, float* writeback) {
+	//float centered[3];
+	//centered[0] = value[0] - b[0];
+	//centered[1] = value[1] - b[1];
+	//centered[2] = value[2] - b[2];
+	//
+	//mat_multiply(A, 3, 3, centered, 3, 1, writeback);
+//}

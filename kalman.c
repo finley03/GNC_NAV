@@ -155,7 +155,7 @@ Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orien
 //
 //uint32_t update_position_previous_time;
 
-void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* estimate_uncertainty, float* measurement_uncertainty, float* accelerometer_bias) {
+void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* estimate_uncertainty, float* measurement_uncertainty) {
 	static uint32_t update_position_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
@@ -423,13 +423,7 @@ void kalman_predict_orientation(Orientation_State* state, Gyro_Data data, float*
 	// convert angular velocity in body frame to change in euler angles in north east down frame
 	
 	const float pi_180 = 0.01745329;
-	
-	//float sinx = sin(state->bit.orientation_x * pi_180);
-	//float siny = sin(state->bit.orientation_y * pi_180);
-	//float sinz = sin(state->bit.orientation_z * pi_180);
-	//float cosx = cos(state->bit.orientation_x * pi_180);
-	//float cosy = cos(state->bit.orientation_y * pi_180);
-	//float cosz = cos(state->bit.orientation_z * pi_180);
+
 	float sinx = sin(state->bit.orientation_x * pi_180);
 	float cosx = cos(state->bit.orientation_x * pi_180);
 	float cosy = cos(state->bit.orientation_y * pi_180);

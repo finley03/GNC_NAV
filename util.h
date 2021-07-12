@@ -23,6 +23,6 @@ void crc_init();
 
 uint32_t gen_crc32(uint32_t data_addr, uint32_t data_size);
 
-void correct_value(float* value, float* A, float* b, float* writeback);
+//void correct_value(float* value, float* A, float* b, float* writeback);
 
 #endif
