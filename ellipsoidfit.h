@@ -16,11 +16,24 @@
 	#define DATA_SIZE
 	#error DATA_SIZE undefined
 #endif
+
+#ifdef CCAT2
+#undef CCAT2
+#endif
+#ifdef CCAT
+#undef CCAT
+#endif
+#ifdef FN
+#undef FN
+#endif
+
 #define CCAT2(x, y) x##y
 #define CCAT(x, y) CCAT2(x, y)
 #define FN(x) CCAT(x, DATA_SIZE)
 
-#define ABS(a) ((a < 0) ? -a : a)
+#ifndef ABS
+#define ABS(a) ((a < 0) ? -(a) : a)
+#endif
 
 #include <stdint.h>
 #include <math.h>

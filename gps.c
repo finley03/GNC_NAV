@@ -1,7 +1,8 @@
 #include "gps.h"
-
-
 #include <math.h>
+
+float gnss_zerolat;
+float gnss_zerolong;
 
 
 void gps_tx_msg(const uint8_t msg[], uint16_t msg_size) {
@@ -117,16 +118,16 @@ void configure_gps() {
 	gps_tx_msg(UBX_CFG_MSG_disableVTG, sizeof(UBX_CFG_MSG_disableVTG));
 	gps_tx_msg(UBX_CFG_MSG_enableUBX_NAV_PVT, sizeof(UBX_CFG_MSG_enableUBX_NAV_PVT));
 	gps_tx_msg(UBX_CFG_MSG_set_rate_15Hz, sizeof(UBX_CFG_MSG_set_rate_15Hz));
+	
+	gnss_zerolat = 50;
+	gnss_zerolong = 0;
 }
-
 
 
 void gps_cartesian(float latitude, float longitude, float* x, float* y) {
 	float multiplier = 111194.9266;
-	float zero_lat = 50.000000;
-	float zero_long = 0.000000;
-	float pi_180 = 0.01745329;
+	//float pi_180 = 0.01745329;
 	
-	*x = (latitude - zero_lat) * multiplier;
-	*y = (longitude - zero_long) * multiplier * cos(latitude * pi_180);
+	*x = (latitude - gnss_zerolat) * multiplier;
+	*y = (longitude - gnss_zerolong) * multiplier * cos(radians(latitude));
 }

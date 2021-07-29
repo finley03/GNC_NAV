@@ -90,6 +90,7 @@ typedef union {
 } Gyro_Data;
 
 
+void kalman_init();
 
 // position kalman filter
 
@@ -98,10 +99,10 @@ typedef union {
 // 3 dimensional update measurements (position)
 
 // tested
-Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation, float* estimate_uncertainty);
+Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation);
 
 // tested
-void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* estimate_uncertainty, float* measurement_uncertainty);
+void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* measurement_uncertainty);
 
 // tested
 void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float vAcc);
@@ -113,9 +114,9 @@ void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float
 // 3 dimensional predict measurements (angular velocity relative to body frame)
 // 3 dimensional update measurements (orientation in very imprecise euler angles)
 
-void kalman_predict_orientation(Orientation_State* state, Gyro_Data data, float* estimate_uncertainty);
+void kalman_predict_orientation(Orientation_State* state, Gyro_Data data);
 
-void kalman_update_orientation(Orientation_State* state, Orientation_State data, float* estimate_uncertainty, float* measurement_uncertainty);
+void kalman_update_orientation(Orientation_State* state, Orientation_State data);
 
 Orientation_State kalman_orientation_generate_state(MAG_Data mag_data, Accel_Data accel_data);
 

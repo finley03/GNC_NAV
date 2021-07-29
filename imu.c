@@ -443,6 +443,7 @@ IMU_Data imu_get_data() {
 	calibrated.gyro_x = uncalibrated.gyro_x;
 	calibrated.gyro_y = uncalibrated.gyro_y;
 	calibrated.gyro_z = uncalibrated.gyro_z;
+	calibrated.temp = uncalibrated.temp;
 	
 	return calibrated;
 }
@@ -464,6 +465,7 @@ MAG_Data mag_get_data() {
 
 
 void mag_cal() {
+	LED_ON();
 	// array for magnetometer data
 	float data[NR_CAL_POINTS * 3];
 	
@@ -480,6 +482,8 @@ void mag_cal() {
 	
 	// regress ellipsoid to data and get correction matrices
 	ellipsoidcorrection_100(data, mag_A, mag_b);
+	
+	LED_OFF();
 }
 
 

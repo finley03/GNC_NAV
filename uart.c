@@ -81,11 +81,28 @@ void control_uart_init() {
 	while(SERCOM0->USART.SYNCBUSY.bit.ENABLE);
 }
 
+void control_uart_flush() {
+	while(SERCOM0->USART.INTFLAG.bit.RXC) SERCOM0->USART.DATA.reg;
+}
 
 void control_uart_send(uint8_t data) {
 	while(!SERCOM0->USART.INTFLAG.bit.DRE);
 	
 	SERCOM0->USART.DATA.reg = data;
+}
+
+void control_uart_stream(uint8_t* addr, uint32_t nr_bytes) {
+	for (uint32_t i = 0; i < nr_bytes; ++i) {
+		control_uart_send(addr[i]);
+	}
+}
+
+void control_uart_read(uint8_t* addr, uint32_t n) {
+	for (uint32_t i = 0; i < n; ++i) {
+		while (!SERCOM0->USART.INTFLAG.bit.RXC);
+		
+		addr[i] = (uint8_t) (SERCOM0->USART.DATA.reg);
+	}
 }
 
 

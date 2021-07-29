@@ -1,16 +1,55 @@
 #include "kalman.h"
 
 
-#include <math.h>
+float kalman_gnss_horizontal_uncertainty_mul;
+float kalman_gnss_vertical_uncertainty_mul;
+float kalman_accel_variance;
+float kalman_angularvelocity_variance;
+float kalman_baro_variance;
+float orientation_measurement_uncertainty[9];
+float position_estimate_uncertainty[36];
+float orientation_estimate_uncertainty[9];
 
+
+
+void kalman_init() {
+	kalman_gnss_horizontal_uncertainty_mul = 1;
+	kalman_gnss_vertical_uncertainty_mul = 1;
+	kalman_accel_variance = KALMAN_ACCEL_VARIANCE;
+	kalman_angularvelocity_variance = KALMAN_ANGULARVELOCITY_VARIANCE;
+	kalman_baro_variance = 4;
+	
+	const float init_position_estimate_uncertainty[36] = {
+		1000, 0, 0, 0, 0, 0,
+		0, 1000, 0, 0, 0, 0,
+		0, 0, 1000, 0, 0, 0,
+		0, 0, 0, 1000, 0, 0,
+		0, 0, 0, 0, 1000, 0,
+		0, 0, 0, 0, 0, 1000
+	};
+	mat_copy((float*)init_position_estimate_uncertainty, 36, position_estimate_uncertainty);
+	
+	const float init_orientation_estimate_uncertainty[9] = {
+		8000, 0, 0,
+		0, 8000, 0,
+		0, 0, 8000
+	};
+	mat_copy((float*)init_orientation_estimate_uncertainty, 9, orientation_estimate_uncertainty);
+	
+	const float init_orientation_measurement_uncertainty[9] = {
+		400, 0, 0,
+		0, 400, 0,
+		0, 0, 400
+	};
+	mat_copy((float*)init_orientation_measurement_uncertainty, 9, orientation_measurement_uncertainty);
+}
 
 // Position Kalman Filter
-
 
 //// global file variable for last time
 //uint32_t predict_position_previous_time;
 
-Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation, float* estimate_uncertainty) {
+Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation) {
 	static uint32_t predict_position_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
@@ -103,11 +142,11 @@ Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orien
 	
 	
 	// calculate position variance
-	float x_var = i_time_4 * 0.25 * KALMAN_ACCEL_VARIANCE;
+	float x_var = i_time_4 * 0.25 * kalman_accel_variance;
 	// calculate velocity variance
-	float v_var = i_time_squared * KALMAN_ACCEL_VARIANCE;
+	float v_var = i_time_squared * kalman_accel_variance;
 	// calculate position velocity covariance
-	float xv_cov = i_time_cubed * 0.5 *	KALMAN_ACCEL_VARIANCE;
+	float xv_cov = i_time_cubed * 0.5 *	kalman_accel_variance;
 	
 	// process uncertainty matrix
 	float Q[36] = {
@@ -135,13 +174,13 @@ Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orien
 	mat_transpose(F, 6, 6, F_t);
 	
 	// multiply P by F
-	mat_multiply(F, 6, 6, estimate_uncertainty, 6, 6, FP);
+	mat_multiply(F, 6, 6, position_estimate_uncertainty, 6, 6, FP);
 	
 	// multiply F_t by FP
 	mat_multiply(FP, 6, 6, F_t, 6, 6, FPF_t);
 	
 	// add process noise and write back to estimate uncertainty
-	mat_add(FPF_t, Q, 36, estimate_uncertainty);
+	mat_add(FPF_t, Q, 36, position_estimate_uncertainty);
 	
 	
 	Accel_Data transformed_accel_data;
@@ -155,7 +194,7 @@ Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orien
 //
 //uint32_t update_position_previous_time;
 
-void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* estimate_uncertainty, float* measurement_uncertainty) {
+void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* measurement_uncertainty) {
 	static uint32_t update_position_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
@@ -198,7 +237,7 @@ void kalman_update_position(Position_State* state, Position_Data data, Orientati
 	mat_transpose(H, 3, 6, H_t);
 	
 	// multiply estimate uncertainty by transpose of observation matrix
-	mat_multiply(estimate_uncertainty, 6, 6, H_t, 6, 3, PH_t);
+	mat_multiply(position_estimate_uncertainty, 6, 6, H_t, 6, 3, PH_t);
 	
 	// multiply result by H
 	mat_multiply(H, 3, 6, PH_t, 6, 3, HPH_t);
@@ -291,7 +330,7 @@ void kalman_update_position(Position_State* state, Position_Data data, Orientati
 	mat_transpose(I6_KH, 6, 6, I6_KH_t);
 	
 	
-	mat_multiply(I6_KH, 6, 6, estimate_uncertainty, 6, 6, I6_KHP);
+	mat_multiply(I6_KH, 6, 6, position_estimate_uncertainty, 6, 6, I6_KHP);
 	
 	
 	mat_multiply(I6_KHP, 6, 6, I6_KH_t, 6, 6, I6_KHPI6_KH_t);
@@ -315,7 +354,7 @@ void kalman_update_position(Position_State* state, Position_Data data, Orientati
 	
 	
 	// add final result
-	mat_add(I6_KHPI6_KH_t, KRK_t, 36, estimate_uncertainty);
+	mat_add(I6_KHPI6_KH_t, KRK_t, 36, position_estimate_uncertainty);
 	
 
 	////----------CALCULATE ACCELEROMETER BIAS CORRECTIONS----------//
@@ -373,18 +412,19 @@ void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float
 	
 	// x axis variance
 	// set covariance values to 0
-	writeback[0] = hAcc_2 * 0.5;
+	writeback[0] = hAcc_2 * kalman_gnss_horizontal_uncertainty_mul;
 	writeback[1] = 0;
 	writeback[2] = 0;
 	writeback[3] = 0;
 	// y axis variance
-	writeback[4] = hAcc_2 * 0.5;
+	writeback[4] = hAcc_2 * kalman_gnss_horizontal_uncertainty_mul;
 	writeback[5] = 0;
 	writeback[6] = 0;
 	writeback[7] = 0;
 	// z axis variance
 	//writeback[8] = vAcc_2;
-	writeback[8] = 2000;
+	//writeback[8] = 2000;
+	writeback[8] = vAcc_2 * kalman_gnss_vertical_uncertainty_mul;
 }
 
 
@@ -394,7 +434,7 @@ void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float
 
 //uint32_t predict_orientation_previous_time;
 
-void kalman_predict_orientation(Orientation_State* state, Gyro_Data data, float* estimate_uncertainty) {
+void kalman_predict_orientation(Orientation_State* state, Gyro_Data data) {
 	static uint32_t predict_orientation_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
@@ -464,7 +504,7 @@ void kalman_predict_orientation(Orientation_State* state, Gyro_Data data, float*
 	
 	
 	// calculate orientation variance
-	float r_var = i_time_squared * KALMAN_ANGULARVELOCITY_VARIANCE;
+	float r_var = i_time_squared * kalman_angularvelocity_variance;
 
 	
 	// process uncertainty matrix
@@ -490,20 +530,20 @@ void kalman_predict_orientation(Orientation_State* state, Gyro_Data data, float*
 	mat_transpose(F, 3, 3, F_t);
 	
 	// multiply P by F
-	mat_multiply(F, 3, 3, estimate_uncertainty, 3, 3, FP);
+	mat_multiply(F, 3, 3, orientation_estimate_uncertainty, 3, 3, FP);
 	
 	// multiply F_t by FP
 	mat_multiply(FP, 3, 3, F_t, 3, 3, FPF_t);
 	
 	// add process noise and write back to estimate uncertainty
-	mat_add(FPF_t, Q, 9, estimate_uncertainty);
+	mat_add(FPF_t, Q, 9, orientation_estimate_uncertainty);
 	
 }
 
 
 //uint32_t update_orientation_previous_time;
 
-void kalman_update_orientation(Orientation_State* state, Orientation_State data, float* estimate_uncertainty, float* measurement_uncertainty) {
+void kalman_update_orientation(Orientation_State* state, Orientation_State data) {
 	static uint32_t update_orientation_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
@@ -555,13 +595,13 @@ void kalman_update_orientation(Orientation_State* state, Orientation_State data,
 	mat_transpose(H, 3, 3, H_t);
 		
 	// multiply estimate uncertainty by transpose of observation matrix
-	mat_multiply(estimate_uncertainty, 3, 3, H_t, 3, 3, PH_t);
+	mat_multiply(orientation_estimate_uncertainty, 3, 3, H_t, 3, 3, PH_t);
 		
 	// multiply result by H
 	mat_multiply(H, 3, 3, PH_t, 3, 3, HPH_t);
 		
 	// calculate innovation
-	mat_add(HPH_t, measurement_uncertainty, 9, S);
+	mat_add(HPH_t, orientation_measurement_uncertainty, 9, S);
 		
 	// calculate inverse of innovation
 	mat_inverse_3x3(S, Sinv);
@@ -649,7 +689,7 @@ void kalman_update_orientation(Orientation_State* state, Orientation_State data,
 	mat_transpose(I3_KH, 3, 3, I3_KH_t);
 		
 		
-	mat_multiply(I3_KH, 3, 3, estimate_uncertainty, 3, 3, I3_KHP);
+	mat_multiply(I3_KH, 3, 3, orientation_estimate_uncertainty, 3, 3, I3_KHP);
 		
 		
 	mat_multiply(I3_KHP, 3, 3, I3_KH_t, 3, 3, I3_KHPI3_KH_t);
@@ -658,7 +698,7 @@ void kalman_update_orientation(Orientation_State* state, Orientation_State data,
 		
 		
 	// multiply kalman gain by measurement uncertainty
-	mat_multiply(K, 3, 3, measurement_uncertainty, 3, 3, KR);
+	mat_multiply(K, 3, 3, orientation_measurement_uncertainty, 3, 3, KR);
 		
 	// untested
 		
@@ -673,7 +713,7 @@ void kalman_update_orientation(Orientation_State* state, Orientation_State data,
 		
 		
 	// add final result
-	mat_add(I3_KHPI3_KH_t, KRK_t, 9, estimate_uncertainty);
+	mat_add(I3_KHPI3_KH_t, KRK_t, 9, orientation_estimate_uncertainty);
 		
 }
 

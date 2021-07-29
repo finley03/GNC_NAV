@@ -1,7 +1,19 @@
 #include "util.h"
-
-
 #include "mat.h"
+
+
+extern float kalman_run;
+extern float kalman_gnss_horizontal_uncertainty_mul;
+extern float kalman_gnss_vertical_uncertainty_mul;
+extern float kalman_accel_variance;
+extern float kalman_angularvelocity_variance;
+extern float kalman_baro_variance;
+extern float gnss_zerolat;
+extern float gnss_zerolong;
+extern float orientation_measurement_uncertainty[9];
+extern float position_estimate_uncertainty[36];
+extern float orientation_estimate_uncertainty[9];
+
 
 
 void LED_print_8(uint8_t data) {
@@ -31,15 +43,15 @@ void crc_init() {
 }
 
 
-uint32_t gen_crc32(uint32_t data_addr, uint32_t data_size) {
+uint32_t crc32(uint8_t* data, uint32_t data_size) {
 	*((volatile unsigned int*) 0x41007058) &= ~0x30000UL;
 	
 	// fill data register with starting value
 	//DSU->DATA.reg = 0xffffffff;
 	DSU->DATA.reg = 0xffffffff;
 	
-	DSU->ADDR.reg = data_addr;
-	DSU->LENGTH.reg = DSU_LENGTH_LENGTH((data_size) / 4);
+	DSU->ADDR.reg = (uint32_t) data;
+	DSU->LENGTH.reg = DSU_LENGTH_LENGTH((data_size / 4));
 	
 	// clear done bit
 	DSU->STATUSA.bit.DONE = 1;
@@ -58,11 +70,104 @@ uint32_t gen_crc32(uint32_t data_addr, uint32_t data_size) {
 }
 
 
-//void correct_value(float* value, float* A, float* b, float* writeback) {
-	//float centered[3];
-	//centered[0] = value[0] - b[0];
-	//centered[1] = value[1] - b[1];
-	//centered[2] = value[2] - b[2];
-	//
-	//mat_multiply(A, 3, 3, centered, 3, 1, writeback);
-//}
+void nav_set_value(NAV_Param parameter, float* value) {
+	switch (parameter) {
+		case _KALMAN_POSITION_UNCERTAINTY:
+		position_estimate_uncertainty[0] = value[0];
+		position_estimate_uncertainty[7] = value[1];
+		position_estimate_uncertainty[14] = value[2];
+		break;
+		case _KALMAN_VELOCITY_UNCERTAINTY:
+		position_estimate_uncertainty[21] = value[0];
+		position_estimate_uncertainty[28] = value[1];
+		position_estimate_uncertainty[35] = value[2];
+		break;
+		case _KALMAN_ORIENTATION_UNCERTAINTY:
+		orientation_estimate_uncertainty[0] = value[0];
+		orientation_estimate_uncertainty[4] = value[1];
+		orientation_estimate_uncertainty[8] = value[2];
+		break;
+		case _KALMAN_ORIENTATION_MEASUREMENT_UNCERTAINTY:
+		orientation_measurement_uncertainty[0] = value[0];
+		orientation_measurement_uncertainty[1] = value[1];
+		orientation_measurement_uncertainty[2] = value[2];
+		break;
+		case _KALMAN_GNSS_HORIZONTAL_UNCERTAINTY_MUL:
+		kalman_gnss_horizontal_uncertainty_mul = *value;
+		break;
+		case _KALMAN_GNSS_VERTICAL_UNCERTAINTY_MUL:
+		kalman_gnss_vertical_uncertainty_mul = *value;
+		break;
+		case _KALMAN_BARO_VARIANCE:
+		kalman_baro_variance = *value;
+		break;
+		case _KALMAN_ACCEL_VARIANCE:
+		kalman_accel_variance = *value;
+		break;
+		case _KALMAN_ANGULARVELOCITY_VARIANCE:
+		kalman_angularvelocity_variance = *value;
+		break;
+		case _KALMAN_GNSS_ZEROLAT:
+		gnss_zerolat = *value;
+		break;
+		case _KALMAN_GNSS_ZEROLONG:
+		gnss_zerolong = *value;
+		break;
+		case _KALMAN_RUN:
+		kalman_run = *value;
+		break;
+		default:
+		break;
+	}
+}
+
+void nav_read_value(NAV_Param parameter, float* value) {
+	switch (parameter) {
+		case _KALMAN_POSITION_UNCERTAINTY:
+		value[0] = position_estimate_uncertainty[0];
+		value[1] = position_estimate_uncertainty[7];
+		value[2] = position_estimate_uncertainty[14];
+		break;
+		case _KALMAN_VELOCITY_UNCERTAINTY:
+		value[0] = position_estimate_uncertainty[21];
+		value[1] = position_estimate_uncertainty[28];
+		value[2] = position_estimate_uncertainty[35];
+		break;
+		case _KALMAN_ORIENTATION_UNCERTAINTY:
+		value[0] = orientation_estimate_uncertainty[0];
+		value[1] = orientation_estimate_uncertainty[4];
+		value[2] = orientation_estimate_uncertainty[8];
+		break;
+		case _KALMAN_ORIENTATION_MEASUREMENT_UNCERTAINTY:
+		value[0] = orientation_measurement_uncertainty[0];
+		value[1] = orientation_measurement_uncertainty[4];
+		value[2] = orientation_measurement_uncertainty[8];
+		break;
+		case _KALMAN_GNSS_HORIZONTAL_UNCERTAINTY_MUL:
+		*value = kalman_gnss_horizontal_uncertainty_mul;
+		break;
+		case _KALMAN_GNSS_VERTICAL_UNCERTAINTY_MUL:
+		*value = kalman_gnss_vertical_uncertainty_mul;
+		break;
+		case _KALMAN_BARO_VARIANCE:
+		*value = kalman_baro_variance;
+		break;
+		case _KALMAN_ACCEL_VARIANCE:
+		*value = kalman_accel_variance;
+		break;
+		case _KALMAN_ANGULARVELOCITY_VARIANCE:
+		*value = kalman_angularvelocity_variance;
+		break;
+		case _KALMAN_GNSS_ZEROLAT:
+		*value = gnss_zerolat;
+		break;
+		case _KALMAN_GNSS_ZEROLONG:
+		*value = gnss_zerolong;
+		break;
+		case _KALMAN_RUN:
+		*value = kalman_run;
+		break;
+		default:
+		break;
+	}
+}
