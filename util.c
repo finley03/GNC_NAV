@@ -2,7 +2,7 @@
 #include "mat.h"
 
 
-extern float kalman_run;
+//extern float kalman_run;
 extern float kalman_gnss_horizontal_uncertainty_mul;
 extern float kalman_gnss_vertical_uncertainty_mul;
 extern float kalman_accel_variance;
@@ -89,8 +89,8 @@ void nav_set_value(NAV_Param parameter, float* value) {
 		break;
 		case _KALMAN_ORIENTATION_MEASUREMENT_UNCERTAINTY:
 		orientation_measurement_uncertainty[0] = value[0];
-		orientation_measurement_uncertainty[1] = value[1];
-		orientation_measurement_uncertainty[2] = value[2];
+		orientation_measurement_uncertainty[4] = value[1];
+		orientation_measurement_uncertainty[8] = value[2];
 		break;
 		case _KALMAN_GNSS_HORIZONTAL_UNCERTAINTY_MUL:
 		kalman_gnss_horizontal_uncertainty_mul = *value;
@@ -113,9 +113,9 @@ void nav_set_value(NAV_Param parameter, float* value) {
 		case _KALMAN_GNSS_ZEROLONG:
 		gnss_zerolong = *value;
 		break;
-		case _KALMAN_RUN:
-		kalman_run = *value;
-		break;
+		//case _KALMAN_RUN:
+		//kalman_run = *value;
+		//break;
 		default:
 		break;
 	}
@@ -164,9 +164,9 @@ void nav_read_value(NAV_Param parameter, float* value) {
 		case _KALMAN_GNSS_ZEROLONG:
 		*value = gnss_zerolong;
 		break;
-		case _KALMAN_RUN:
-		*value = kalman_run;
-		break;
+		//case _KALMAN_RUN:
+		//*value = kalman_run;
+		//break;
 		default:
 		break;
 	}

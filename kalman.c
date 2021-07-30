@@ -734,7 +734,7 @@ Orientation_State kalman_orientation_generate_state(MAG_Data mag_data, Accel_Dat
 	
 	// normalize accel data and write to down
 	// gravity should somewhat follow down
-	mat_3_normalize(accel, down);
+	vec_3_normalize(accel, down);
 	
 	// populate mag data array
 	float mag[3];
@@ -743,19 +743,19 @@ Orientation_State kalman_orientation_generate_state(MAG_Data mag_data, Accel_Dat
 	mag[2] = mag_data.bit.mag_z;
 	
 	// normalize mag array and write back to mag
-	mat_3_normalize(mag, mag);
+	vec_3_normalize(mag, mag);
 	
 	// take cross product down x mag to find east
 	mat_crossp(down, mag, east);
 	
 	// normalize east
-	mat_3_normalize(east, east);
+	vec_3_normalize(east, east);
 	
 	// take cross product east x down to find north
 	mat_crossp(east, down, north);
 	
 	// double check north is fully normalized
-	mat_3_normalize(north, north);
+	vec_3_normalize(north, north);
 	
 	
 	// calculate Euler angles from pseudo

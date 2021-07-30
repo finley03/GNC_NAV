@@ -4,7 +4,7 @@
 #include <math.h>
 
 
-#define ABS(a) ((a < 0) ? -a : a)
+#define ABS(a) ((a < 0) ? -(a) : a)
 #define MAX_2(a, b) ((a > b) ? a : b)
 #define MAX_3(a, b, c) (MAX_2(MAX_2(a, b), c))
 #define UMAX_2(a, b) MAX_2(ABS(a), ABS(b))
@@ -270,14 +270,14 @@ void mat_crossp(float* mat1, float* mat2, float* writeback) {
 }
 
 
-void mat_2_normalize(float* mat, float* writeback) {
+void vec_2_normalize(float* mat, float* writeback) {
 	float scalar = 1 / sqrt(mat[0] * mat[0] + mat[1] * mat[1]);
 
 	writeback[0] = mat[0] * scalar;
 	writeback[1] = mat[1] * scalar;
 }
 
-void mat_3_normalize(float* mat, float* writeback) {
+void vec_3_normalize(float* mat, float* writeback) {
 	float scalar = 1 / sqrt(mat[0] * mat[0] + mat[1] * mat[1] + mat[2] * mat[2]);
 	
 	writeback[0] = mat[0] * scalar;
@@ -364,7 +364,7 @@ void mat_3_eigenvalues(float* mat, float* values) {
 void mat_2_eigenvector(float* mat, float lambda, float* vector) {
 	vector[0] = 1;
 	vector[1] = -(mat[0] - lambda) / mat[1];
-	mat_2_normalize(vector, vector);
+	vec_2_normalize(vector, vector);
 }
 
 
@@ -381,5 +381,5 @@ void mat_3_eigenvector(float* mat, float lambda, float* vector) {
 	vector[1] = (bv2cv3 - (mat[2] / mat[5]) * elv2fv3) / (mat[1] - (mat[4] - lambda) * (mat[2] / mat[5]));
 	vector[2] = -(mat[1] * vector[1] + mat[0] - lambda) / mat[2];
 
-	mat_3_normalize(vector, vector);
+	vec_3_normalize(vector, vector);
 }

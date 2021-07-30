@@ -18,7 +18,8 @@ void system_check();
 NAV_Selftest_Packet nav_selftest_packet;
 NAV_Data_Packet nav_data_packet;
 NAV_ACK_Packet nav_ack_packet;
-float kalman_run;
+//float kalman_run;
+bool kalman_run;
 
 
 int main(void) {
@@ -179,14 +180,13 @@ int main(void) {
 				// run orientation kalman update step
 			
 			
-			
 				accel_mag_orientation = kalman_orientation_generate_state(mag_data, accel_data);
 			
 				kalman_update_orientation(&orientation_state, accel_mag_orientation);
 			
 			
-				//// get barometer pressure readings
-				//nav_data_packet.bit.pressure = baro_get_pressure(&nav_data_packet.bit.baro_temperature);
+				// get barometer pressure readings
+				nav_data_packet.bit.pressure = baro_get_pressure(&nav_data_packet.bit.baro_temperature);
 			
 			}
 		}
@@ -417,16 +417,22 @@ void txc_data() {
 			
 			// calibrate magnetometer
 			case 0x86:
-			{
-				mag_cal();
-			}
+			mag_cal();
+			break;
+			
+			// enable kalman filter
+			case 0x87:
+			kalman_run = true;
+			break;
+			
+			// disable kalman filter
+			case 0x88:
+			kalman_run = false;
 			break;
 			
 			// reset computer
 			case 0xFF:
-			{
-				NVIC_SystemReset();
-			}
+			NVIC_SystemReset();
 			break;
 		}
 		

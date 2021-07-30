@@ -28,8 +28,8 @@ void mat_inverse_n(float* mat, uint16_t n, float* writeback);
 
 void mat_crossp(float* mat1, float* mat2, float* writeback);
 
-void mat_2_normalize(float* mat, float* writeback);
-void mat_3_normalize(float* mat, float* writeback);
+void vec_2_normalize(float* mat, float* writeback);
+void vec_3_normalize(float* mat, float* writeback);
 
 float poly_newton(float* coeff, uint16_t degree);
 

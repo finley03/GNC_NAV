@@ -24,7 +24,7 @@ typedef enum {
 	_KALMAN_GNSS_ZEROLONG,
 	
 	_NAV_VOLATILE_PARAM_START = 24576,
-	_KALMAN_RUN
+	//_KALMAN_RUN
 } NAV_Param;
 
 #define LED PORT_PA02
@@ -44,8 +44,8 @@ typedef enum {
 #define pow(a, b) exp2(b * log2(a))
 #define powf(a, b) exp2f(b * log2f(a))
 
-#define radians(x) (x * 0.01745329251994329576923690768489)
-#define degrees(x) (x * 57.295779513082320876798154814105)
+#define radians(x) ((x) * 0.01745329251994329576923690768489)
+#define degrees(x) ((x) * 57.295779513082320876798154814105)
 
 void LED_print_8(uint8_t data);
 
