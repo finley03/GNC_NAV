@@ -93,8 +93,6 @@ int main(void) {
 	// accelerometer magnetometer orientation estimate
 	static Orientation_State accel_mag_orientation;
 	
-	//float accelerometer_bias[3] = { 0, 0, 0 };
-	
 	
 	while(1) {
 		delay_ms(2);

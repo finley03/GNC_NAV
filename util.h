@@ -22,6 +22,12 @@ typedef enum {
 	_KALMAN_ANGULARVELOCITY_VARIANCE,
 	_KALMAN_GNSS_ZEROLAT,
 	_KALMAN_GNSS_ZEROLONG,
+	_MAG_A_1, // mag distortion matrix
+	_MAG_A_2,
+	_MAG_A_3,
+	_MAG_B, // mag offset vector
+	_ACCEL_B, // accel offset vector
+	_GYRO_B, // gyro offset vector
 	
 	_NAV_VOLATILE_PARAM_START = 24576,
 	//_KALMAN_RUN

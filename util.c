@@ -13,6 +13,10 @@ extern float gnss_zerolong;
 extern float orientation_measurement_uncertainty[9];
 extern float position_estimate_uncertainty[36];
 extern float orientation_estimate_uncertainty[9];
+extern float mag_A[9];
+extern float mag_b[3];
+extern float accel_b[3];
+extern float gyro_b[3];
 
 
 
@@ -113,9 +117,24 @@ void nav_set_value(NAV_Param parameter, float* value) {
 		case _KALMAN_GNSS_ZEROLONG:
 		gnss_zerolong = *value;
 		break;
-		//case _KALMAN_RUN:
-		//kalman_run = *value;
-		//break;
+		case _MAG_A_1:
+		mat_copy(value, 3, mag_A);
+		break;
+		case _MAG_A_2:
+		mat_copy(value, 3, mag_A + 3);
+		break;
+		case _MAG_A_3:
+		mat_copy(value, 3, mag_A + 6);
+		break;
+		case _MAG_B:
+		mat_copy(value, 3, mag_b);
+		break;
+		case _ACCEL_B:
+		mat_copy(value, 3, accel_b);
+		break;
+		case _GYRO_B:
+		mat_copy(value, 3, gyro_b);
+		break;
 		default:
 		break;
 	}
@@ -164,9 +183,24 @@ void nav_read_value(NAV_Param parameter, float* value) {
 		case _KALMAN_GNSS_ZEROLONG:
 		*value = gnss_zerolong;
 		break;
-		//case _KALMAN_RUN:
-		//*value = kalman_run;
-		//break;
+		case _MAG_A_1:
+		mat_copy(value, 3, mag_A);
+		break;
+		case _MAG_A_2:
+		mat_copy(value, 3, mag_A + 3);
+		break;
+		case _MAG_A_3:
+		mat_copy(value, 3, mag_A + 6);
+		break;
+		case _MAG_B:
+		mat_copy(value, 3, mag_b);
+		break;
+		case _ACCEL_B:
+		mat_copy(value, 3, accel_b);
+		break;
+		case _GYRO_B:
+		mat_copy(value, 3, gyro_b);
+		break;
 		default:
 		break;
 	}

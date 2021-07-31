@@ -9,10 +9,10 @@
 
 
 // calibration data
-static float mag_A[9];
-static float mag_b[3];
-static float accel_b[3];
-static float gyro_b[3];
+float mag_A[9];
+float mag_b[3];
+float accel_b[3];
+float gyro_b[3];
 
 
 // changes user bank accessible by spi
