@@ -437,9 +437,12 @@ IMU_Data imu_get_data() {
 	IMU_Data uncalibrated = imu_get_data_raw();
 	IMU_Data calibrated;
 	
-	calibrated.accel_x = uncalibrated.accel_x - accel_b[0];
-	calibrated.accel_y = uncalibrated.accel_y - accel_b[1];
-	calibrated.accel_z = uncalibrated.accel_z - accel_b[2];
+	//calibrated.accel_x = uncalibrated.accel_x - accel_b[0];
+	//calibrated.accel_y = uncalibrated.accel_y - accel_b[1];
+	//calibrated.accel_z = uncalibrated.accel_z - accel_b[2];
+	calibrated.accel_x = uncalibrated.accel_x;
+	calibrated.accel_y = uncalibrated.accel_y;
+	calibrated.accel_z = uncalibrated.accel_z;
 	calibrated.gyro_x = uncalibrated.gyro_x;
 	calibrated.gyro_y = uncalibrated.gyro_y;
 	calibrated.gyro_z = uncalibrated.gyro_z;

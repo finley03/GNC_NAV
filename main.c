@@ -21,6 +21,8 @@ NAV_ACK_Packet nav_ack_packet;
 //float kalman_run;
 bool kalman_run;
 
+float debug;
+
 
 int main(void) {
 	init();
@@ -229,7 +231,7 @@ int main(void) {
 		
 		nav_data_packet.bit.imu_temperature = imu_data.temp;
 		
-		nav_data_packet.bit.debug1 = 1;
+		nav_data_packet.bit.debug1 = debug;
 		nav_data_packet.bit.debug2 = 2;
 		
 		
@@ -330,6 +332,7 @@ void txc_data() {
 				// check packet is valid
 				if (crc32(set_request.reg, sizeof(set_request.reg)) == CRC32_CHECK &&
 					set_request.bit.header == NAV_SET_VEC3_REQUEST_HEADER) {
+					debug = (float) set_request.bit.parameter;
 					nav_set_value((NAV_Param) set_request.bit.parameter, set_request.bit.data);
 				}
 				else {

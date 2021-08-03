@@ -184,22 +184,22 @@ void nav_read_value(NAV_Param parameter, float* value) {
 		*value = gnss_zerolong;
 		break;
 		case _MAG_A_1:
-		mat_copy(value, 3, mag_A);
+		mat_copy(mag_A, 3, value);
 		break;
 		case _MAG_A_2:
-		mat_copy(value, 3, mag_A + 3);
+		mat_copy(mag_A + 3, 3, value);
 		break;
 		case _MAG_A_3:
-		mat_copy(value, 3, mag_A + 6);
+		mat_copy(mag_A + 6, 3, value);
 		break;
 		case _MAG_B:
-		mat_copy(value, 3, mag_b);
+		mat_copy(mag_b, 3, value);
 		break;
 		case _ACCEL_B:
-		mat_copy(value, 3, accel_b);
+		mat_copy(accel_b, 3, value);
 		break;
 		case _GYRO_B:
-		mat_copy(value, 3, gyro_b);
+		mat_copy(gyro_b, 3, value);
 		break;
 		default:
 		break;
