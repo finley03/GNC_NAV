@@ -428,6 +428,28 @@ void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float
 }
 
 
+void kalman_position_measurement_uncertainty_baro(float* writeback, float hAcc) {
+	// given values for accuracy should be standard deviation
+	// square values to get variance
+	float hAcc_2 = hAcc * hAcc;
+	
+	// x axis variance
+	// set covariance values to 0
+	writeback[0] = hAcc_2 * kalman_gnss_horizontal_uncertainty_mul;
+	writeback[1] = 0;
+	writeback[2] = 0;
+	writeback[3] = 0;
+	// y axis variance
+	writeback[4] = hAcc_2 * kalman_gnss_horizontal_uncertainty_mul;
+	writeback[5] = 0;
+	writeback[6] = 0;
+	writeback[7] = 0;
+	// z axis variance
+	//writeback[8] = vAcc_2;
+	//writeback[8] = 2000;
+	writeback[8] = kalman_baro_variance;
+}
+
 
 
 // Orientation Kalman Filter

@@ -138,16 +138,16 @@ int main(void) {
 			if (gps_dma_check_complete()) {
 				float latitude = ubx_nav_pvt.bit.lat * 1E-7;
 				float longitude = ubx_nav_pvt.bit.lon * 1E-7;
-				float height = ubx_nav_pvt.bit.height * 1E-3;
+				float gps_height = ubx_nav_pvt.bit.height * 1E-3;
 				float hAcc = ubx_nav_pvt.bit.hAcc * 1E-3;
 				float vAcc = ubx_nav_pvt.bit.vAcc * 1E-3;
 			
-				//float height = get_pressure_altitude(&nav_data_packet.bit.pressure, &nav_data_packet.bit.baro_temperature);
+				float baro_height = get_pressure_altitude(&nav_data_packet.bit.pressure, &nav_data_packet.bit.baro_temperature);
 			
 			
 				nav_data_packet.bit.latitude = latitude;
 				nav_data_packet.bit.longitude = longitude;
-				nav_data_packet.bit.gps_height = height;
+				nav_data_packet.bit.gps_height = gps_height;
 				nav_data_packet.bit.h_acc = hAcc;
 				nav_data_packet.bit.v_acc = vAcc;
 				nav_data_packet.bit.gps_satellites = ubx_nav_pvt.bit.numSV;
@@ -159,7 +159,8 @@ int main(void) {
 				// run position kalman update step
 			
 				// update measurement uncertainty
-				kalman_position_measurement_uncertainty(position_measurement_uncertainty, hAcc, vAcc);
+				//kalman_position_measurement_uncertainty(position_measurement_uncertainty, hAcc, vAcc);
+				kalman_position_measurement_uncertainty_baro(position_measurement_uncertainty, hAcc);
 			
 				// get cartesian coordinates or current position
 				float x, y;
@@ -170,7 +171,7 @@ int main(void) {
 				Position_Data position_data;
 				position_data.bit.position_x = x;
 				position_data.bit.position_y = y;
-				position_data.bit.position_z = -height;
+				position_data.bit.position_z = -baro_height;
 			
 			
 				kalman_update_position(&position_state, position_data, orientation_state, position_measurement_uncertainty);
@@ -186,7 +187,7 @@ int main(void) {
 			
 			
 				// get barometer pressure readings
-				nav_data_packet.bit.pressure = baro_get_pressure(&nav_data_packet.bit.baro_temperature);
+				//nav_data_packet.bit.pressure = baro_get_pressure(&nav_data_packet.bit.baro_temperature);
 			
 			}
 		}

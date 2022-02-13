@@ -17,6 +17,7 @@ extern float mag_A[9];
 extern float mag_b[3];
 extern float accel_b[3];
 extern float gyro_b[3];
+extern float baro_height_cal;
 
 
 
@@ -135,6 +136,9 @@ void nav_set_value(NAV_Param parameter, float* value) {
 		case _GYRO_B:
 		mat_copy(value, 3, gyro_b);
 		break;
+		case _BARO_HEIGHT_CAL:
+		baro_height_cal = *value;
+		break;
 		default:
 		break;
 	}
@@ -200,6 +204,9 @@ void nav_read_value(NAV_Param parameter, float* value) {
 		break;
 		case _GYRO_B:
 		mat_copy(gyro_b, 3, value);
+		break;
+		case _BARO_HEIGHT_CAL:
+		*value = baro_height_cal;
 		break;
 		default:
 		break;

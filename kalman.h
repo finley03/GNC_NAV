@@ -107,6 +107,8 @@ void kalman_update_position(Position_State* state, Position_Data data, Orientati
 // tested
 void kalman_position_measurement_uncertainty(float* writeback, float hAcc, float vAcc);
 
+void kalman_position_measurement_uncertainty_baro(float* writeback, float hAcc);
+
 
 // orientation kalman filter
 

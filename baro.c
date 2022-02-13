@@ -1,6 +1,9 @@
 #include "baro.h"
 
 
+float baro_height_cal;
+
+
 // takes delay in microseconds
 void baro_send_command(uint8_t command, uint16_t delay) {
 	// SS low
@@ -67,6 +70,8 @@ void baro_init() {
 
 	// get prom calibration data
 	baro_prom_read();
+	
+	baro_height_cal = 0;
 }
 
 
@@ -154,5 +159,5 @@ float baro_get_pressure(float* temperature) {
 float get_pressure_altitude(float* pressure, float* temperature) {
 	*pressure = baro_get_pressure(temperature);
 	float altitude = 44307.69396 * (1 - pow((*pressure / 1013.25), 0.190284));
-	return altitude;
+	return altitude + baro_height_cal;
 }
