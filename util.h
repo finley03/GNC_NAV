@@ -35,8 +35,9 @@ typedef enum {
 } NAV_Param;
 
 #define LED PORT_PA02
-#define LED_ON() (REG_PORT_OUTSET0 = LED);
-#define LED_OFF() (REG_PORT_OUTCLR0 = LED);
+#define LED_ON() (REG_PORT_OUTSET0 = LED)
+#define LED_OFF() (REG_PORT_OUTCLR0 = LED)
+#define LED_TOGGLE() (REG_PORT_OUTTGL0 = LED)
 
 #define ABS(a) ((a < 0) ? -(a) : a)
 #define MAX_2(a, b) ((a > b) ? a : b)

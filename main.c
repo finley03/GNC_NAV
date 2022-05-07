@@ -20,6 +20,7 @@ NAV_Data_Packet nav_data_packet;
 NAV_ACK_Packet nav_ack_packet;
 //float kalman_run;
 bool kalman_run;
+bool enable_kalman_orientation_update;
 
 float debug;
 
@@ -99,9 +100,10 @@ int main(void) {
 	while(1) {
 		delay_ms(2);
 		
-		LED_ON();
+		if (enable_kalman_orientation_update) LED_ON();
 		// data collection and predict moved to top to give kalman filter more accurate data
 		IMU_Data imu_data = imu_get_data();
+		//delay_us(10);
 		LED_OFF();
 				
 				
@@ -183,7 +185,9 @@ int main(void) {
 			
 				accel_mag_orientation = kalman_orientation_generate_state(mag_data, accel_data);
 			
-				kalman_update_orientation(&orientation_state, accel_mag_orientation);
+				// only update orientation if enabled (will be disabled by master in dynamic moves)
+				if (enable_kalman_orientation_update)
+					kalman_update_orientation(&orientation_state, accel_mag_orientation);
 			
 			
 				// get barometer pressure readings
@@ -237,6 +241,11 @@ int main(void) {
 		
 		
 		txc_data();
+		
+		if (mag_check() != 0) {
+			LED_ON();
+			while(1);
+		}
 	}
 	
 	return 0;
@@ -259,7 +268,11 @@ void system_check() {
 }
 
 
-void init() {
+void init() {	
+	// set LED to output
+	REG_PORT_DIRSET0 = LED;
+	LED_ON();
+
 	set_clock_48m();
 	init_timer();
 
@@ -278,17 +291,22 @@ void init() {
 	configure_gps();
 	
 	
-	// set LED to output
-	REG_PORT_DIRSET0 = LED;
-	//REG_PORT_OUTSET0 = LED;
-
 	nav_ack_packet.bit.device_id = DEVICE_ID;
 	kalman_init();	
 	kalman_run = false;
+	enable_kalman_orientation_update = true;
+	
+	if (mag_check() != 0) {
+		LED_ON();
+		while(1);
+	}
+	
+	LED_OFF();
 }
 
 
 void txc_data() {
+	
 	if (SERCOM0->USART.INTFLAG.bit.RXC) {
 		uint8_t command = SERCOM0->USART.DATA.reg;
 		
@@ -430,6 +448,21 @@ void txc_data() {
 			// disable kalman filter
 			case 0x88:
 			kalman_run = false;
+			break;
+			
+			// enable kalman orientation update step
+			case 0x89:
+			enable_kalman_orientation_update = true;
+			break;
+			
+			// disable kalman orientation update step
+			case 0x8A:
+			enable_kalman_orientation_update = false;
+			break;
+			
+			// calibrate gyro
+			case 0x8B:
+			gyro_cal();
 			break;
 			
 			// reset computer

@@ -210,7 +210,11 @@ MAG_Data mag_get_data();
 //MAG_Cal_Data mag_cal();
 void mag_cal();
 
-void accel_mag_cal();
+// calibrate gyro
+// board must remain still
+void gyro_cal();
+
+//void accel_mag_cal();
 
 
 uint8_t mag_check();

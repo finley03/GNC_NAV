@@ -3,8 +3,8 @@
 
 
 // create regression function for ellipsoid
-#define NR_CAL_POINTS 100
-#define DATA_SIZE NR_CAL_POINTS
+#define NR_MAG_CAL_POINTS 100
+#define DATA_SIZE NR_MAG_CAL_POINTS
 #include "ellipsoidfit.h"
 
 
@@ -200,7 +200,7 @@ void imu_init_magnetometer() {
 
 	imu_user_bank(0);
 	//
-	//delay_ms(1);
+	delay_ms(1); // maybe remove
 	//
 	// set magnetometer to continuous measurment at 100hz
 	imu_mag_write(MAG_CNTL2, 0x08);
@@ -437,15 +437,12 @@ IMU_Data imu_get_data() {
 	IMU_Data uncalibrated = imu_get_data_raw();
 	IMU_Data calibrated;
 	
-	//calibrated.accel_x = uncalibrated.accel_x - accel_b[0];
-	//calibrated.accel_y = uncalibrated.accel_y - accel_b[1];
-	//calibrated.accel_z = uncalibrated.accel_z - accel_b[2];
 	calibrated.accel_x = uncalibrated.accel_x;
 	calibrated.accel_y = uncalibrated.accel_y;
 	calibrated.accel_z = uncalibrated.accel_z;
-	calibrated.gyro_x = uncalibrated.gyro_x;
-	calibrated.gyro_y = uncalibrated.gyro_y;
-	calibrated.gyro_z = uncalibrated.gyro_z;
+	calibrated.gyro_x = uncalibrated.gyro_x - gyro_b[0];
+	calibrated.gyro_y = uncalibrated.gyro_y - gyro_b[1];
+	calibrated.gyro_z = uncalibrated.gyro_z - gyro_b[2];
 	calibrated.temp = uncalibrated.temp;
 	
 	return calibrated;
@@ -466,13 +463,18 @@ MAG_Data mag_get_data() {
 	return calibrated;
 }
 
-
+#define MAG_CAL_TIME 20.0f // seconds to calibrate magnetometer
+#define MAG_CAL_ITERATION_DELAY (MAG_CAL_TIME * 1000 / NR_MAG_CAL_POINTS)
+#define CCAT2(x, y) x##y
+#define CCAT(x, y) CCAT2(x, y)
+#define FN(x) CCAT(x, NR_MAG_CAL_POINTS)
 void mag_cal() {
-	LED_ON();
 	// array for magnetometer data
-	float data[NR_CAL_POINTS * 3];
+	float data[NR_MAG_CAL_POINTS * 3];
 	
-	for (uint16_t i = 0; i < NR_CAL_POINTS; ++i) {
+	for (uint16_t i = 0; i < NR_MAG_CAL_POINTS; ++i) {
+		LED_TOGGLE();
+		
 		// get magnetometer data
 		MAG_Data mag_data = mag_get_data_raw();
 		
@@ -480,34 +482,64 @@ void mag_cal() {
 		mat_copy(mag_data.reg, 3, data + i * 3);
 		
 		// wait 100 ms so 10s for entire calibration
-		delay_ms(100);
+		delay_ms(MAG_CAL_ITERATION_DELAY);
 	}
 	
 	// regress ellipsoid to data and get correction matrices
-	ellipsoidcorrection_100(data, mag_A, mag_b);
+	//ellipsoidcorrection_100(data, mag_A, mag_b);
+	FN(ellipsoidcorrection_)(data, mag_A, mag_b);
+	
+	LED_OFF();
+}
+
+#define NR_GYRO_CAL_POINTS 1000
+#define GYRO_CAL_TIME 10.0f // seconds to calibrate gyro
+#define GYRO_CAL_ITERATION_DELAY (GYRO_CAL_TIME * 1000 / NR_GYRO_CAL_POINTS)
+void gyro_cal() {
+	// array for gyro axes
+	double data[3] = { 0.0, 0.0, 0.0 };
+	
+	for (uint16_t i = 0; i < NR_GYRO_CAL_POINTS; ++i) {
+		if (i % 20 == 0) LED_TOGGLE();
+		
+		// get imu data
+		IMU_Data imu_data = imu_get_data_raw();
+		
+		// add data to gyro_b
+		data[0] += imu_data.gyro_x;
+		data[1] += imu_data.gyro_y;
+		data[2] += imu_data.gyro_z;
+		
+		delay_ms(GYRO_CAL_ITERATION_DELAY);
+	}
+	
+	// write correct values to gyro_b
+	gyro_b[0] = data[0] / NR_GYRO_CAL_POINTS;
+	gyro_b[1] = data[1] / NR_GYRO_CAL_POINTS;
+	gyro_b[2] = data[2] / NR_GYRO_CAL_POINTS;
 	
 	LED_OFF();
 }
 
 
-void accel_mag_cal() {
-	// arrays for data
-	float mag_array[NR_CAL_POINTS * 3];
-	float accel_array[NR_CAL_POINTS * 3];
-	
-	for (uint16_t i = 0; i < NR_CAL_POINTS; ++i) {
-		// get data
-		MAG_Data mag_data = mag_get_data_raw();
-		IMU_Data imu_data = imu_get_data_raw();
-		float accel_data[3] = { imu_data.accel_x, imu_data.accel_y, imu_data.accel_z };
-		
-		mat_copy(mag_data.reg, 3, mag_array + i * 3);
-		mat_copy(accel_data, 3, accel_array + i * 3);
-		
-		delay_ms(150);
-	}
-	
-	float dummyvector[9];
-	ellipsoidcorrection_100(mag_array, mag_A, mag_b);
-	ellipsoidcorrection_100(accel_array, dummyvector, accel_b);
-}
+//void accel_mag_cal() {
+	//// arrays for data
+	//float mag_array[NR_CAL_POINTS * 3];
+	//float accel_array[NR_CAL_POINTS * 3];
+	//
+	//for (uint16_t i = 0; i < NR_CAL_POINTS; ++i) {
+		//// get data
+		//MAG_Data mag_data = mag_get_data_raw();
+		//IMU_Data imu_data = imu_get_data_raw();
+		//float accel_data[3] = { imu_data.accel_x, imu_data.accel_y, imu_data.accel_z };
+		//
+		//mat_copy(mag_data.reg, 3, mag_array + i * 3);
+		//mat_copy(accel_data, 3, accel_array + i * 3);
+		//
+		//delay_ms(150);
+	//}
+	//
+	//float dummyvector[9];
+	//ellipsoidcorrection_100(mag_array, mag_A, mag_b);
+	//ellipsoidcorrection_100(accel_array, dummyvector, accel_b);
+//}
