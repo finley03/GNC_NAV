@@ -293,7 +293,7 @@ void init() {
 	
 	nav_ack_packet.bit.device_id = DEVICE_ID;
 	kalman_init();	
-	kalman_run = false;
+	kalman_run = true;
 	enable_kalman_orientation_update = true;
 	
 	if (mag_check() != 0) {
