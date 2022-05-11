@@ -151,6 +151,9 @@ typedef struct {
 	int16_t mag_x;
 	int16_t mag_y;
 	int16_t mag_z;
+	
+	uint8_t tmps; // dummy register
+	uint8_t st2; // must be read to end read transaction
 } MAG_Raw_Data_Type;
 
 

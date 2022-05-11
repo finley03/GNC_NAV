@@ -98,7 +98,7 @@ int main(void) {
 	
 	
 	while(1) {
-		delay_ms(2);
+		//delay_ms(2);
 		
 		if (enable_kalman_orientation_update) LED_ON();
 		// data collection and predict moved to top to give kalman filter more accurate data
@@ -242,10 +242,10 @@ int main(void) {
 		
 		txc_data();
 		
-		if (mag_check() != 0) {
-			LED_ON();
-			while(1);
-		}
+		//if (mag_check() != 0) {
+			//LED_ON();
+			//while(1);
+		//}
 	}
 	
 	return 0;
@@ -355,8 +355,10 @@ void txc_data() {
 					nav_set_value((NAV_Param) set_request.bit.parameter, set_request.bit.data);
 				}
 				else {
-					LED_ON();
-					while(1);
+					//LED_ON();
+					//while(1);
+					
+					// do nothing
 				}
 			}
 			break;
@@ -381,8 +383,10 @@ void txc_data() {
 					control_uart_stream(read_packet.reg, sizeof(read_packet.reg));
 				}
 				else {
-					LED_ON();
-					while(1);
+					//LED_ON();
+					//while(1);
+					
+					// do nothing
 				}
 			}
 			break;
@@ -403,8 +407,10 @@ void txc_data() {
 					nav_set_value((NAV_Param) set_request.bit.parameter, &set_request.bit.data);
 				}
 				else {
-					LED_ON();
-					while(1);
+					//LED_ON();
+					//while(1);
+					
+					// do nothing
 				}
 			}
 			break;
@@ -429,8 +435,10 @@ void txc_data() {
 					control_uart_stream(read_packet.reg, sizeof(read_packet.reg));
 				}
 				else {
-					LED_ON();
-					while(1);
+					//LED_ON();
+					//while(1);
+					
+					// do nothing
 				}
 			}
 			break;

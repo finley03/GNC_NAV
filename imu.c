@@ -133,10 +133,10 @@ uint8_t imu_mag_read(uint8_t address) {
 }
 
 
-// max 7 bytes
+// max 7 bytes // edit: What? it works just fine with more!
 void imu_mag_read_n(uint8_t address, uint8_t writeback[], uint8_t size) {
 	// make sure value is within range
-	size = (size < 8) ? size : 7;
+	//size = (size < 8) ? size : 7;
 	
 	imu_user_bank(3);
 	
@@ -409,9 +409,10 @@ IMU_Data imu_get_data_raw() {
 MAG_Data mag_get_data_raw() {
 	MAG_Raw_Data mag_raw_data;
 	// read all mag registers as one string
+	// ST2 is automatically read
 	imu_mag_read_n(MAG_HXL, mag_raw_data.reg, sizeof(mag_raw_data.reg));
 	// read ST2 register to indicate reading has finished and new data can be loaded
-	imu_mag_read(MAG_ST2);
+	//imu_mag_read(MAG_ST2);
 	
 	
 	MAG_Data mag_data;
