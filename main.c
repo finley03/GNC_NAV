@@ -124,38 +124,58 @@ int main(void) {
 		gyro_data.bit.rotation_x = imu_data.gyro_x;
 		gyro_data.bit.rotation_y = imu_data.gyro_y;
 		gyro_data.bit.rotation_z = imu_data.gyro_z;
-				
-				
-		Accel_Data transformed_accel;
+		
+		bool new_position_data = false;
+		float latitude, longitude, gps_height, hAcc, vAcc, baro_height;
+		if (gps_dma_check_complete()) {
+			latitude = ubx_nav_pvt.bit.lat * 1E-7;
+			longitude = ubx_nav_pvt.bit.lon * 1E-7;
+			gps_height = ubx_nav_pvt.bit.height * 1E-3;
+			hAcc = ubx_nav_pvt.bit.hAcc * 1E-3;
+			float vAcc = ubx_nav_pvt.bit.vAcc * 1E-3;
+			
+			baro_height = get_pressure_altitude(&nav_data_packet.bit.pressure, &nav_data_packet.bit.baro_temperature);
+			
+			nav_data_packet.bit.latitude = latitude;
+			nav_data_packet.bit.longitude = longitude;
+			nav_data_packet.bit.gps_height = gps_height;
+			nav_data_packet.bit.h_acc = hAcc;
+			nav_data_packet.bit.v_acc = vAcc;
+			nav_data_packet.bit.gps_satellites = ubx_nav_pvt.bit.numSV;
+			
+			new_position_data = true;
+		}
+		
+		
 				
 		if (kalman_run) {
-			if (nav_data_packet.bit.h_acc < 50) {
-				// run kalman predict step
-				transformed_accel = kalman_predict_position(&position_state, accel_data, orientation_state);
-				kalman_predict_orientation(&orientation_state, gyro_data);
-			}
+			//if (nav_data_packet.bit.h_acc < 50) {
+			// run kalman predict step
+			kalman_predict_position(&position_state, accel_data, orientation_state);
+			kalman_predict_orientation(&orientation_state, gyro_data);
+			//}
 		
 		
 		
-			if (gps_dma_check_complete()) {
-				float latitude = ubx_nav_pvt.bit.lat * 1E-7;
-				float longitude = ubx_nav_pvt.bit.lon * 1E-7;
-				float gps_height = ubx_nav_pvt.bit.height * 1E-3;
-				float hAcc = ubx_nav_pvt.bit.hAcc * 1E-3;
-				float vAcc = ubx_nav_pvt.bit.vAcc * 1E-3;
-			
-				float baro_height = get_pressure_altitude(&nav_data_packet.bit.pressure, &nav_data_packet.bit.baro_temperature);
-			
-			
-				nav_data_packet.bit.latitude = latitude;
-				nav_data_packet.bit.longitude = longitude;
-				nav_data_packet.bit.gps_height = gps_height;
-				nav_data_packet.bit.h_acc = hAcc;
-				nav_data_packet.bit.v_acc = vAcc;
-				nav_data_packet.bit.gps_satellites = ubx_nav_pvt.bit.numSV;
-			
-			
-				if (nav_data_packet.bit.h_acc >= 50) continue;
+			if (new_position_data) {
+				//float latitude = ubx_nav_pvt.bit.lat * 1E-7;
+				//float longitude = ubx_nav_pvt.bit.lon * 1E-7;
+				//float gps_height = ubx_nav_pvt.bit.height * 1E-3;
+				//float hAcc = ubx_nav_pvt.bit.hAcc * 1E-3;
+				//float vAcc = ubx_nav_pvt.bit.vAcc * 1E-3;
+			//
+				//float baro_height = get_pressure_altitude(&nav_data_packet.bit.pressure, &nav_data_packet.bit.baro_temperature);
+			//
+			//
+				//nav_data_packet.bit.latitude = latitude;
+				//nav_data_packet.bit.longitude = longitude;
+				//nav_data_packet.bit.gps_height = gps_height;
+				//nav_data_packet.bit.h_acc = hAcc;
+				//nav_data_packet.bit.v_acc = vAcc;
+				//nav_data_packet.bit.gps_satellites = ubx_nav_pvt.bit.numSV;
+			//
+			//
+				//if (nav_data_packet.bit.h_acc >= 50) continue;
 			
 			
 				// run position kalman update step
@@ -188,11 +208,6 @@ int main(void) {
 				// only update orientation if enabled (will be disabled by master in dynamic moves)
 				if (enable_kalman_orientation_update)
 					kalman_update_orientation(&orientation_state, accel_mag_orientation);
-			
-			
-				// get barometer pressure readings
-				//nav_data_packet.bit.pressure = baro_get_pressure(&nav_data_packet.bit.baro_temperature);
-			
 			}
 		}
 		
@@ -222,9 +237,9 @@ int main(void) {
 		nav_data_packet.bit.angularvelocity_y = imu_data.gyro_y;
 		nav_data_packet.bit.angularvelocity_z = imu_data.gyro_z;
 		
-		nav_data_packet.bit.accel_x = transformed_accel.bit.accel_x;
-		nav_data_packet.bit.accel_y = transformed_accel.bit.accel_y;
-		nav_data_packet.bit.accel_z = transformed_accel.bit.accel_z;
+		nav_data_packet.bit.accel_x = accel_data.bit.accel_x;
+		nav_data_packet.bit.accel_y = accel_data.bit.accel_y;
+		nav_data_packet.bit.accel_z = accel_data.bit.accel_z;
 		
 		nav_data_packet.bit.accelraw_x = imu_data.accel_x;
 		nav_data_packet.bit.accelraw_y = imu_data.accel_y;
@@ -293,7 +308,7 @@ void init() {
 	
 	nav_ack_packet.bit.device_id = DEVICE_ID;
 	kalman_init();	
-	kalman_run = true;
+	kalman_run = false;
 	enable_kalman_orientation_update = true;
 	
 	if (mag_check() != 0) {

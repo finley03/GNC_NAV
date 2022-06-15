@@ -492,6 +492,9 @@ void mag_cal() {
 	
 	LED_OFF();
 }
+#undef CCAT2
+#undef CCAT
+#undef FN
 
 #define NR_GYRO_CAL_POINTS 1000
 #define GYRO_CAL_TIME 10.0f // seconds to calibrate gyro

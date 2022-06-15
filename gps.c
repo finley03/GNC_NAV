@@ -126,7 +126,6 @@ void configure_gps() {
 
 void gps_cartesian(float latitude, float longitude, float* x, float* y) {
 	float multiplier = 111194.9266;
-	//float pi_180 = 0.01745329;
 	
 	*x = (latitude - gnss_zerolat) * multiplier;
 	*y = (longitude - gnss_zerolong) * multiplier * cos(radians(latitude));
