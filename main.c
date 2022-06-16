@@ -19,8 +19,13 @@ NAV_Selftest_Packet nav_selftest_packet;
 NAV_Data_Packet nav_data_packet;
 NAV_ACK_Packet nav_ack_packet;
 //float kalman_run;
-bool kalman_run;
+bool kalman_run, enable_kalman_position;
 bool enable_kalman_orientation_update;
+
+bool set_home;
+extern float gnss_zerolat;
+extern float gnss_zerolong;
+extern float baro_height_cal;
 
 float debug;
 
@@ -126,7 +131,7 @@ int main(void) {
 		gyro_data.bit.rotation_z = imu_data.gyro_z;
 		
 		bool new_position_data = false;
-		float latitude, longitude, gps_height, hAcc, vAcc, baro_height;
+		static float latitude, longitude, gps_height, hAcc, vAcc, baro_height;
 		if (gps_dma_check_complete()) {
 			latitude = ubx_nav_pvt.bit.lat * 1E-7;
 			longitude = ubx_nav_pvt.bit.lon * 1E-7;
@@ -147,67 +152,48 @@ int main(void) {
 		}
 		
 		
+		// set home position
+		if (set_home) {
+			gnss_zerolat = latitude;
+			gnss_zerolong = longitude;
+			baro_height_cal += baro_height;
+			set_home = false;
+		}
+		
 				
 		if (kalman_run) {
-			//if (nav_data_packet.bit.h_acc < 50) {
-			// run kalman predict step
-			kalman_predict_position(&position_state, accel_data, orientation_state);
 			kalman_predict_orientation(&orientation_state, gyro_data);
-			//}
-		
+			if (enable_kalman_position) kalman_predict_position(&position_state, accel_data, orientation_state);
 		
 		
 			if (new_position_data) {
-				//float latitude = ubx_nav_pvt.bit.lat * 1E-7;
-				//float longitude = ubx_nav_pvt.bit.lon * 1E-7;
-				//float gps_height = ubx_nav_pvt.bit.height * 1E-3;
-				//float hAcc = ubx_nav_pvt.bit.hAcc * 1E-3;
-				//float vAcc = ubx_nav_pvt.bit.vAcc * 1E-3;
-			//
-				//float baro_height = get_pressure_altitude(&nav_data_packet.bit.pressure, &nav_data_packet.bit.baro_temperature);
-			//
-			//
-				//nav_data_packet.bit.latitude = latitude;
-				//nav_data_packet.bit.longitude = longitude;
-				//nav_data_packet.bit.gps_height = gps_height;
-				//nav_data_packet.bit.h_acc = hAcc;
-				//nav_data_packet.bit.v_acc = vAcc;
-				//nav_data_packet.bit.gps_satellites = ubx_nav_pvt.bit.numSV;
-			//
-			//
-				//if (nav_data_packet.bit.h_acc >= 50) continue;
-			
-			
-				// run position kalman update step
-			
-				// update measurement uncertainty
-				//kalman_position_measurement_uncertainty(position_measurement_uncertainty, hAcc, vAcc);
-				kalman_position_measurement_uncertainty_baro(position_measurement_uncertainty, hAcc);
-			
-				// get cartesian coordinates or current position
-				float x, y;
-			
-				gps_cartesian(latitude, longitude, &x, &y);
-			
-				// create measurement type
-				Position_Data position_data;
-				position_data.bit.position_x = x;
-				position_data.bit.position_y = y;
-				position_data.bit.position_z = -baro_height;
-			
-			
-				kalman_update_position(&position_state, position_data, orientation_state, position_measurement_uncertainty);
-			
-			
-			
 				// run orientation kalman update step
-			
-			
 				accel_mag_orientation = kalman_orientation_generate_state(mag_data, accel_data);
-			
+				
 				// only update orientation if enabled (will be disabled by master in dynamic moves)
 				if (enable_kalman_orientation_update)
-					kalman_update_orientation(&orientation_state, accel_mag_orientation);
+				kalman_update_orientation(&orientation_state, accel_mag_orientation);
+				
+				
+				// run position kalman update step
+				if (enable_kalman_position) {
+					// update measurement uncertainty
+					//kalman_position_measurement_uncertainty(position_measurement_uncertainty, hAcc, vAcc);
+					kalman_position_measurement_uncertainty_baro(position_measurement_uncertainty, hAcc);
+			
+					// get cartesian coordinates or current position
+					float x, y;
+			
+					gps_cartesian(latitude, longitude, &x, &y);
+			
+					// create measurement type
+					Position_Data position_data;
+					position_data.bit.position_x = x;
+					position_data.bit.position_y = y;
+					position_data.bit.position_z = -baro_height;
+			
+					kalman_update_position(&position_state, position_data, orientation_state, position_measurement_uncertainty);
+				}
 			}
 		}
 		
@@ -308,8 +294,11 @@ void init() {
 	
 	nav_ack_packet.bit.device_id = DEVICE_ID;
 	kalman_init();	
-	kalman_run = false;
+	kalman_run = true;
+	enable_kalman_position = false;
 	enable_kalman_orientation_update = true;
+	
+	set_home = false;
 	
 	if (mag_check() != 0) {
 		LED_ON();
@@ -486,6 +475,21 @@ void txc_data() {
 			// calibrate gyro
 			case 0x8B:
 			gyro_cal();
+			break;
+			
+			// enable kalman position
+			case 0x8C:
+			enable_kalman_position = true;
+			break;
+			
+			// disable kalman position
+			case 0x8D:
+			enable_kalman_position = false;
+			break;
+			
+			// set home
+			case 0x8E:
+			set_home = true;
 			break;
 			
 			// reset computer

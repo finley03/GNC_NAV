@@ -159,5 +159,5 @@ float baro_get_pressure(float* temperature) {
 float get_pressure_altitude(float* pressure, float* temperature) {
 	*pressure = baro_get_pressure(temperature);
 	float altitude = 44307.69396 * (1 - pow((*pressure / 1013.25), 0.190284));
-	return altitude + baro_height_cal;
+	return altitude - baro_height_cal;
 }
