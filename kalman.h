@@ -99,7 +99,7 @@ void kalman_init();
 // 3 dimensional update measurements (position)
 
 // tested
-void kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation);
+Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation);
 
 // tested
 void kalman_update_position(Position_State* state, Position_Data data, Orientation_State orientation, float* measurement_uncertainty);

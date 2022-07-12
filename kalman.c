@@ -49,7 +49,7 @@ void kalman_init() {
 //// global file variable for last time
 //uint32_t predict_position_previous_time;
 
-void kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation) {
+Accel_Data kalman_predict_position(Position_State* state, Accel_Data data, Orientation_State orientation) {
 	static uint32_t predict_position_previous_time = 0;
 	// get current time
 	uint32_t current_time = read_timer_20ns();
@@ -183,11 +183,11 @@ void kalman_predict_position(Position_State* state, Accel_Data data, Orientation
 	mat_add(FPF_t, Q, 36, position_estimate_uncertainty);
 	
 	
-	//Accel_Data transformed_accel_data;
-	//transformed_accel_data.bit.accel_x = accel_data[0];
-	//transformed_accel_data.bit.accel_y = accel_data[1];
-	//transformed_accel_data.bit.accel_z = accel_data[2];
-	//return transformed_accel_data;
+	Accel_Data transformed_accel_data;
+	transformed_accel_data.bit.accel_x = accel_data[0];
+	transformed_accel_data.bit.accel_y = accel_data[1];
+	transformed_accel_data.bit.accel_z = accel_data[2];
+	return transformed_accel_data;
 }
 
 

@@ -49,6 +49,7 @@ int main(void) {
 	
 	
 	static MAG_Data mag_data;
+	static Accel_Data accel_data_raw;
 	static Accel_Data accel_data;
 	
 	
@@ -121,9 +122,9 @@ int main(void) {
 		//correct_value(mag_data_uncalibrated.reg, A, b, mag_data.reg);
 				
 		// create accelerometer data type
-		accel_data.bit.accel_x = imu_data.accel_x;
-		accel_data.bit.accel_y = imu_data.accel_y;
-		accel_data.bit.accel_z = imu_data.accel_z;
+		accel_data_raw.bit.accel_x = imu_data.accel_x;
+		accel_data_raw.bit.accel_y = imu_data.accel_y;
+		accel_data_raw.bit.accel_z = imu_data.accel_z;
 				
 		Gyro_Data gyro_data;
 		gyro_data.bit.rotation_x = imu_data.gyro_x;
@@ -163,12 +164,12 @@ int main(void) {
 				
 		if (kalman_run) {
 			kalman_predict_orientation(&orientation_state, gyro_data);
-			if (enable_kalman_position) kalman_predict_position(&position_state, accel_data, orientation_state);
+			if (enable_kalman_position) accel_data = kalman_predict_position(&position_state, accel_data_raw, orientation_state);
 		
 		
 			if (new_position_data) {
 				// run orientation kalman update step
-				accel_mag_orientation = kalman_orientation_generate_state(mag_data, accel_data);
+				accel_mag_orientation = kalman_orientation_generate_state(mag_data, accel_data_raw);
 				
 				// only update orientation if enabled (will be disabled by master in dynamic moves)
 				if (enable_kalman_orientation_update)
